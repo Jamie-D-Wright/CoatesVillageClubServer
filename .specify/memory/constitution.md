@@ -1,50 +1,121 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Coates Village Club Server Constitution
+
+<!--
+Version Change: 1.0.0 → 1.0.0 (Initial Version)
+Added principles:
+- Test-First Development
+- Code Quality Standards
+- Performance First
+- Comprehensive Testing
+- Maintainable Architecture
+
+Added sections:
+- Quality Metrics
+- Development Process
+
+Templates requiring updates:
+✅ .specify/templates/plan-template.md
+✅ .specify/templates/spec-template.md
+✅ .specify/templates/tasks-template.md
+-->
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Test-First Development (NON-NEGOTIABLE)
+All code MUST be developed following Test-Driven Development (TDD) principles:
+- Tests MUST be written before implementation code
+- Tests MUST fail initially to verify test validity
+- Implementation MUST be written to make tests pass
+- Only tested code can be committed to the repository
+- Test coverage MUST be maintained at 80% or higher
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Rationale: TDD ensures code reliability, maintains quality standards, and provides living documentation of intended behavior.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Code Quality Standards
+Code MUST adhere to established quality metrics and practices:
+- Follow consistent coding style and naming conventions
+- Maximum cyclomatic complexity of 10 per function
+- Methods MUST not exceed 30 lines of code
+- Classes MUST have single responsibility
+- Code duplication MUST be less than 5%
+- All code MUST pass linting and static analysis
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Rationale: Consistent code quality standards ensure maintainability and reduce technical debt.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Performance First
+Performance requirements MUST be defined and validated:
+- API response times MUST be under 200ms for 95% of requests
+- Resource usage limits MUST be specified and monitored
+- Performance tests MUST be automated and included in CI/CD
+- Load testing MUST verify handling of 10x expected load
+- Memory leaks and resource cleanup MUST be verified
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Rationale: Performance is a feature that affects user experience and operational costs.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Comprehensive Testing
+Multiple testing levels MUST be implemented and maintained:
+- Unit tests for individual components
+- Integration tests for component interactions
+- End-to-end tests for critical user flows
+- Load tests for performance validation
+- Security tests for vulnerability detection
+- Tests MUST be automated and repeatable
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Rationale: Comprehensive testing ensures reliability and catches issues early.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Maintainable Architecture
+Architecture MUST follow proven design principles:
+- Clear separation of concerns
+- Dependency injection for loose coupling
+- Interface-based design for flexibility
+- Proper error handling and logging
+- Documentation of architectural decisions
+- Version control of configuration
+
+Rationale: Maintainable architecture reduces long-term costs and enables rapid feature development.
+
+## Quality Metrics
+The following metrics MUST be tracked and maintained:
+
+### Code Quality
+- Test Coverage: ≥80%
+- Code Duplication: <5%
+- Cyclomatic Complexity: ≤10
+- Method Length: ≤30 lines
+- Class Size: ≤200 lines
+- Documentation Coverage: ≥90%
+
+### Performance Metrics
+- API Response Time: P95 ≤200ms
+- Database Query Time: P95 ≤100ms
+- Memory Usage: ≤512MB per instance
+- CPU Usage: ≤50% sustained
+- Error Rate: ≤0.1%
+
+### Test Metrics
+- Unit Test Pass Rate: 100%
+- Integration Test Pass Rate: 100%
+- End-to-End Test Pass Rate: 100%
+- Performance Test Pass Rate: 100%
+- Test Execution Time: ≤10 minutes
+
+## Development Process
+1. Create feature branch from main
+2. Write tests following TDD principles
+3. Implement feature to pass tests
+4. Verify quality metrics compliance
+5. Conduct code review
+6. Run full test suite
+7. Merge only if all checks pass
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+This constitution supersedes all other development practices and guidelines. Amendments require:
+1. Documentation of proposed changes
+2. Impact analysis on existing codebase
+3. Approval from technical leadership
+4. Clear migration plan for affected components
+5. Version number increment following semver
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+All pull requests MUST verify compliance with these principles. Exceptions require explicit approval and documentation.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-12
