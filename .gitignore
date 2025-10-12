@@ -1,0 +1,80 @@
+# .NET Core
+bin/
+obj/
+*.user
+*.suo
+project.lock.json
+*.dll
+*.pdb
+*.cache
+*.exe
+
+# Visual Studio files
+.vs/
+*.userprefs
+*.usertasks
+*.vscode/
+*.idea/
+
+# Azure Functions
+local.settings.json
+.azure/
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Application Insights
+ApplicationInsights.config
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+project.lock.json
+project.assets.json
+
+# User-specific files
+*.rsuser
+*.userosscache
+*.sln.docstates
+
+# Logging
+*.log
+*.logs/
+
+# Environment files
+.env
+.env.*
+
+# Azure Functions local settings
+local.settings.json
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Operating System
+.DS_Store
+Thumbs.db
