@@ -25,16 +25,16 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 
 **Purpose**: Repository structure, shared libraries, and infrastructure foundation
 
-- [ ] T001 Create monorepo directory structure: `services/`, `libs/`, `infrastructure/`, `docs/`
-- [ ] T002 [P] Create solution file `CoatesVillageClubServer.sln` at repository root
-- [ ] T003 [P] Create shared contracts library project `libs/VillageClub.Contracts/VillageClub.Contracts.csproj` with DTOs and interfaces
-- [ ] T004 [P] Create `.editorconfig` at root with C# code style rules (max complexity 10, methods ≤30 lines)
-- [ ] T005 [P] Add `Directory.Build.props` at root for shared NuGet package versions and analyzer configuration
-- [ ] T006 [P] Configure SonarAnalyzer.CSharp and code quality analyzers in `Directory.Build.props`
-- [ ] T007 Create `infrastructure/main.bicep` with Azure SQL Database (serverless tier, auto-pause enabled)
-- [ ] T008 [P] Add Bicep module `infrastructure/modules/function-app.bicep` for Azure Functions deployment template
-- [ ] T009 [P] Add Bicep module `infrastructure/modules/apim.bicep` for Azure API Management (Consumption tier)
-- [ ] T010 [P] Add Bicep module `infrastructure/modules/blob-storage.bicep` for receipt storage with lifecycle policies
+- [X] T001 Create monorepo directory structure: `services/`, `libs/`, `infrastructure/`, `docs/`
+- [X] T002 [P] Create solution file `CoatesVillageClubServer.sln` at repository root
+- [X] T003 [P] Create shared contracts library project `libs/VillageClub.Contracts/VillageClub.Contracts.csproj` with DTOs and interfaces
+- [X] T004 [P] Create `.editorconfig` at root with C# code style rules (max complexity 10, methods ≤30 lines)
+- [X] T005 [P] Add `Directory.Build.props` at root for shared NuGet package versions and analyzer configuration
+- [X] T006 [P] Configure SonarAnalyzer.CSharp and code quality analyzers in `Directory.Build.props`
+- [X] T007 Create `infrastructure/main.bicep` with Azure SQL Database (serverless tier, auto-pause enabled)
+- [X] T008 [P] Add Bicep module `infrastructure/modules/function-app.bicep` for Azure Functions deployment template
+- [X] T009 [P] Add Bicep module `infrastructure/modules/apim.bicep` for Azure API Management (Consumption tier)
+- [X] T010 [P] Add Bicep module `infrastructure/modules/blob-storage.bicep` for receipt storage with lifecycle policies
 
 ---
 
@@ -44,16 +44,16 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T011 Create database schemas SQL script `infrastructure/scripts/create-schemas.sql` (Membership, Events, Scheduling, Bar, Finance)
-- [ ] T012 Add shared DTO models to `libs/VillageClub.Contracts/Models/` (UserDto, RoleDto, ErrorResponse, PagedResult)
-- [ ] T013 [P] Add shared authentication interfaces to `libs/VillageClub.Contracts/Auth/` (IJwtTokenService, IAuthContext)
-- [ ] T014 [P] Add shared validation helpers to `libs/VillageClub.Contracts/Validation/` (FluentValidation base validators)
-- [ ] T015 Create Membership service project structure: `services/membership/src/VillageClub.Membership/VillageClub.Membership.csproj`
-- [ ] T016 Add EF Core packages and Azure Functions SDK to Membership service project
-- [ ] T017 Create `services/membership/src/VillageClub.Membership/Data/MembershipDbContext.cs` with Membership schema configuration
-- [ ] T018 Create `services/membership/src/VillageClub.Membership/Program.cs` with DI configuration (EF Core, Azure Identity, Serilog)
-- [ ] T019 Create `services/membership/host.json` and `local.settings.json` for Azure Functions configuration
-- [ ] T020 Add health check endpoint `services/membership/src/VillageClub.Membership/Functions/HealthFunctions.cs` returning JWT public key
+- [X] T011 Create database schemas SQL script `infrastructure/scripts/create-schemas.sql` (Membership, Events, Scheduling, Bar, Finance)
+- [X] T012 Add shared DTO models to `libs/VillageClub.Contracts/Models/` (UserDto, RoleDto, ErrorResponse, PagedResult)
+- [X] T013 [P] Add shared authentication interfaces to `libs/VillageClub.Contracts/Auth/` (IJwtTokenService, IAuthContext)
+- [X] T014 [P] Add shared validation helpers to `libs/VillageClub.Contracts/Validation/` (FluentValidation base validators)
+- [X] T015 Create Membership service project structure: `services/membership/src/VillageClub.Membership/VillageClub.Membership.csproj`
+- [X] T016 Add EF Core packages and Azure Functions SDK to Membership service project
+- [X] T017 Create `services/membership/src/VillageClub.Membership/Data/MembershipDbContext.cs` with Membership schema configuration
+- [X] T018 Create `services/membership/src/VillageClub.Membership/Program.cs` with DI configuration (EF Core, Azure Identity, Serilog)
+- [X] T019 Create `services/membership/host.json` and `local.settings.json` for Azure Functions configuration
+- [X] T020 Add health check endpoint `services/membership/src/VillageClub.Membership/Functions/HealthFunctions.cs` returning JWT public key
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 

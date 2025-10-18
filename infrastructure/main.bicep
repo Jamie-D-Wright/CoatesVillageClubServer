@@ -2,11 +2,29 @@ param location string = resourceGroup().location
 param environmentName string
 param serviceName string = 'villageclub'
 
+@secure()
+@description('SQL Server administrator login')
+param sqlAdminLogin string
+
+@secure()
+@description('SQL Server administrator password')
+param sqlAdminPassword string
+
+@description('API Management publisher email')
+param apimPublisherEmail string = 'admin@coatesvillageclub.org'
+
+@description('API Management publisher name')
+param apimPublisherName string = 'Coates Village Club'
+
 var functionAppName = 'func-${serviceName}-${environmentName}'
 var appServicePlanName = 'asp-${serviceName}-${environmentName}'
 var appInsightsName = 'appi-${serviceName}-${environmentName}'
-var keyVaultName = 'kv-${serviceName}-${environmentName}'
+var keyVaultName = 'kv-${take('${serviceName}${environmentName}', 21)}'
 var storageAccountName = take('st${serviceName}${environmentName}', 24)
+var sqlServerName = 'sql-${serviceName}-${environmentName}'
+var apimName = 'apim-${serviceName}-${environmentName}'
+var receiptsStorageName = take('streceipts${serviceName}${environmentName}', 24)
+
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
@@ -105,6 +123,59 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
           value: environmentName
         }
       ]
+    }
+  }
+}
+
+// SQL Database Module
+module sqlDatabase 'modules/sql-database.bicep' = {
+  name: 'sqlDatabase'
+  params: {
+    sqlServerName: sqlServerName
+    location: location
+    sqlAdminLogin: sqlAdminLogin
+    sqlAdminPassword: sqlAdminPassword
+    databaseName: 'VillageClubDB'
+    enableServerless: true
+    minCapacity: '0.5'
+    maxCapacity: '2'
+    autoPauseDelay: 60
+    tags: {
+      Environment: environmentName
+      Service: serviceName
+    }
+  }
+}
+
+// Blob Storage Module for Receipts
+module receiptsStorage 'modules/blob-storage.bicep' = {
+  name: 'receiptsStorage'
+  params: {
+    storageAccountName: receiptsStorageName
+    location: location
+    storageAccountSku: 'Standard_LRS'
+    receiptsContainerName: 'receipts'
+    coolTierTransitionDays: 90
+    tags: {
+      Environment: environmentName
+      Service: serviceName
+      Purpose: 'Receipts'
+    }
+  }
+}
+
+// API Management Module
+module apiManagement 'modules/apim.bicep' = {
+  name: 'apiManagement'
+  params: {
+    apimName: apimName
+    location: location
+    publisherEmail: apimPublisherEmail
+    publisherName: apimPublisherName
+    sku: 'Consumption'
+    tags: {
+      Environment: environmentName
+      Service: serviceName
     }
   }
 }
