@@ -18,7 +18,7 @@ public enum UserRole
     /// <summary>
     /// Committee member (full administrative access)
     /// </summary>
-    Committee
+    Committee,
 }
 
 /// <summary>
@@ -49,7 +49,7 @@ public enum CommitteeRole
     /// <summary>
     /// General committee member
     /// </summary>
-    General
+    General,
 }
 
 /// <summary>
@@ -70,5 +70,5 @@ public enum UserStatus
     /// <summary>
     /// Suspended account (disciplinary action)
     /// </summary>
-    Suspended
+    Suspended,
 }

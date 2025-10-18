@@ -24,12 +24,6 @@ var host = new HostBuilder()
                     errorNumbersToAdd: null);
             });
         });
-
-        // TODO: Add services here
-        // services.AddScoped<IJwtTokenService, JwtTokenService>();
-        // services.AddScoped<IPasswordHashService, PasswordHashService>();
-        // services.AddScoped<IAuthService, AuthService>();
-        // services.AddScoped<IUserService, UserService>();
     })
     .Build();
 

@@ -43,7 +43,7 @@
   <!-- Analyzer Configuration -->
   <PropertyGroup>
     <!-- Disable some overly aggressive StyleCop rules -->
-    <NoWarn>$(NoWarn);SA1101;SA1309;SA1633;SA1652;SA1028</NoWarn>
+    <NoWarn>$(NoWarn);SA0001;SA1101;SA1309;SA1633;SA1652;SA1028</NoWarn>
   </PropertyGroup>
 
 </Project>

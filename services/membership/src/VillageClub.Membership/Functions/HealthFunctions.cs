@@ -1,8 +1,8 @@
+using System.Net;
+using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using System.Text.Json;
 
 namespace VillageClub.Membership.Functions;
 
@@ -36,9 +36,7 @@ public class HealthFunctions
             status = "Healthy",
             timestamp = DateTime.UtcNow,
             version = "1.0.0",
-            environment = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development"
-            // TODO: Add JWT public key here once JwtTokenService is implemented
-            // publicKey = _jwtTokenService.GetPublicKey()
+            environment = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT") ?? "Development",
         };
 
         await response.WriteStringAsync(JsonSerializer.Serialize(healthStatus));
@@ -46,8 +44,11 @@ public class HealthFunctions
     }
 
     /// <summary>
-    /// Readiness check endpoint - verifies database connectivity
+    /// <summary>
+    /// Readiness check endpoint - verifies database connectivity.
     /// </summary>
+    /// <param name="req">The HTTP request.</param>
+    /// <returns>Readiness status response.</returns>
     [Function("Ready")]
     public async Task<HttpResponseData> GetReadiness(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "ready")] HttpRequestData req)
@@ -56,9 +57,6 @@ public class HealthFunctions
 
         try
         {
-            // TODO: Add database connectivity check
-            // await _dbContext.Database.CanConnectAsync();
-
             var response = req.CreateResponse(HttpStatusCode.OK);
             response.Headers.Add("Content-Type", "application/json");
 
@@ -69,8 +67,8 @@ public class HealthFunctions
                 timestamp = DateTime.UtcNow,
                 checks = new
                 {
-                    database = "NotImplemented" // Will be "Healthy" once database check is added
-                }
+                    database = "NotImplemented",
+                },
             };
 
             await response.WriteStringAsync(JsonSerializer.Serialize(readinessStatus));
@@ -79,7 +77,7 @@ public class HealthFunctions
         catch (Exception ex)
         {
             _logger.LogError(ex, "Readiness check failed");
-            
+
             var response = req.CreateResponse(HttpStatusCode.ServiceUnavailable);
             response.Headers.Add("Content-Type", "application/json");
 
@@ -88,7 +86,7 @@ public class HealthFunctions
                 service = "Membership",
                 ready = false,
                 timestamp = DateTime.UtcNow,
-                error = ex.Message
+                error = ex.Message,
             };
 
             await response.WriteStringAsync(JsonSerializer.Serialize(errorStatus));
