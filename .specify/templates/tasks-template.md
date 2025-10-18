@@ -17,10 +17,13 @@ description: "Task list template for feature implementation"
 - Include exact file paths in descriptions
 
 ## Path Conventions
+- **Microservices**: `services/[service-name]/src/`, `services/[service-name]/tests/`
+- **Shared libraries**: `libs/[lib-name]/`
 - **Single project**: `src/`, `tests/` at repository root
 - **Web app**: `backend/src/`, `frontend/src/`
 - **Mobile**: `api/src/`, `ios/src/` or `android/src/`
 - Paths shown below assume single project - adjust based on plan.md structure
+- For microservices features, group tasks by affected service
 
 <!-- 
   ============================================================================

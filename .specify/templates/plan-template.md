@@ -51,12 +51,36 @@ specs/[###-feature]/
 <!--
   ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
   for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
+  real paths (e.g., services/membership, libs/common-types). The delivered plan
+  must not include Option labels.
 -->
 
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+# [REMOVE IF UNUSED] Option 1: Microservices Monorepo (DEFAULT for CoatesVillageClubServer)
+services/
+├── [service-name]/          # e.g., membership, events, scheduling, bar, notifications
+│   ├── src/
+│   │   ├── models/
+│   │   ├── services/
+│   │   ├── api/
+│   │   └── infrastructure/
+│   ├── tests/
+│   │   ├── unit/
+│   │   ├── integration/
+│   │   └── contract/
+│   └── Dockerfile
+├── api-gateway/
+│   └── [same structure]
+
+libs/
+├── common-types/            # Shared data models and interfaces
+├── common-utils/            # Utility functions, helpers
+└── contracts/               # Service contracts and API definitions
+
+tests/
+└── e2e/                     # Cross-service end-to-end tests
+
+# [REMOVE IF UNUSED] Option 2: Single project (for simple features)
 src/
 ├── models/
 ├── services/
@@ -68,7 +92,7 @@ tests/
 ├── integration/
 └── unit/
 
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+# [REMOVE IF UNUSED] Option 3: Web application (when "frontend" + "backend" detected)
 backend/
 ├── src/
 │   ├── models/
@@ -83,7 +107,7 @@ frontend/
 │   └── services/
 └── tests/
 
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+# [REMOVE IF UNUSED] Option 4: Mobile + API (when "iOS/Android" detected)
 api/
 └── [same as backend above]
 
@@ -92,7 +116,10 @@ ios/ or android/
 ```
 
 **Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+directories captured above. For microservices, specify which service(s) are
+affected by this feature]
+
+**Affected Services**: [List services modified by this feature, e.g., "membership, events"]
 
 ## Complexity Tracking
 
