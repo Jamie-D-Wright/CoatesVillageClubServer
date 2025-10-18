@@ -28,8 +28,17 @@ All code MUST be developed following Test-Driven Development (TDD) principles:
 - Implementation MUST be written to make tests pass
 - Only tested code can be committed to the repository
 - Test coverage MUST be maintained at 80% or higher
+- Tests MUST follow the Arrange-Act-Assert pattern:
+  - Arrange: Set up the test conditions and inputs
+  - Act: Call the specific method being tested
+  - Assert: Verify the output or state changes
+- Tests MUST test actual implementation methods, not mock behaviors
+- Code MUST be structured to enable testing of concrete implementations
+- Tests MUST NOT contain business logic or implementation details
+- Each test MUST focus on a single method or behavior
+- Test names MUST clearly describe the scenario being tested
 
-Rationale: TDD ensures code reliability, maintains quality standards, and provides living documentation of intended behavior.
+Rationale: TDD ensures code reliability, maintains quality standards, and provides living documentation of intended behavior. Proper test structure ensures tests validate actual implementation behavior rather than mocked responses.
 
 ### II. Code Quality Standards
 Code MUST adhere to established quality metrics and practices:
@@ -39,8 +48,23 @@ Code MUST adhere to established quality metrics and practices:
 - Classes MUST have single responsibility
 - Code duplication MUST be less than 5%
 - All code MUST pass linting and static analysis
+- Strict separation of concerns MUST be maintained:
+  - Business logic MUST be separated from infrastructure concerns
+  - Data access MUST be isolated from business logic
+  - Cross-cutting concerns MUST be properly abstracted
+  - Each layer MUST communicate through well-defined interfaces
+  - Configuration MUST be separated from application code
+- Functional programming principles MUST be followed:
+  - Methods MUST be stateless and pure where possible
+  - Side effects MUST be isolated and explicitly defined
+  - Functions MUST return new state rather than modify existing state
+  - Immutable data structures MUST be preferred
+  - Methods MUST have predictable outputs for given inputs
+  - State changes MUST be handled through explicit state management
+  - Shared state MUST be avoided unless absolutely necessary
+  - Functions MUST be composable and single-purpose
 
-Rationale: Consistent code quality standards ensure maintainability and reduce technical debt.
+Rationale: Consistent code quality standards, clear separation of concerns, and functional programming principles ensure maintainability, testability, and reduce technical debt. Stateless, pure functions make testing more reliable and predictable by eliminating hidden dependencies and side effects. This approach naturally supports TDD by making behavior more predictable and isolated.
 
 ### III. Performance First
 Performance requirements MUST be defined and validated:
@@ -118,4 +142,4 @@ This constitution supersedes all other development practices and guidelines. Ame
 
 All pull requests MUST verify compliance with these principles. Exceptions require explicit approval and documentation.
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-12
+**Version**: 1.1.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-18
