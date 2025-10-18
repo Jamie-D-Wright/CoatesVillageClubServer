@@ -3,6 +3,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using VillageClub.Auth.Services;
 using VillageClub.Contracts.Auth;
 using VillageClub.Membership.Data;
 using VillageClub.Membership.Models;
@@ -30,9 +31,21 @@ var host = new HostBuilder()
             });
         });
 
-        // Services
-        services.AddSingleton<IJwtTokenService, JwtTokenService>();
-        services.AddScoped<IPasswordHashService, PasswordHashService>();
+        // Auth Library Services (framework-agnostic)
+        services.AddSingleton<IJwtTokenService>(sp =>
+        {
+            var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "VillageClub";
+            var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "VillageClub.Api";
+            var expirationMinutes = int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MINUTES"), out var minutes) 
+                ? minutes 
+                : 15;
+            var privateKey = Environment.GetEnvironmentVariable("JWT_PRIVATE_KEY");
+            
+            return new VillageClub.Auth.Services.JwtTokenService(issuer, audience, expirationMinutes, privateKey);
+        });
+        services.AddScoped<IPasswordHashService, VillageClub.Auth.Services.PasswordHashService>();
+        
+        // Domain Services (Membership-specific)
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IAuthService, AuthService>();
 

@@ -100,6 +100,35 @@
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
 
+### Library Design *(mandatory - Library-First Development)*
+
+<!--
+  ACTION REQUIRED: Design the library interface BEFORE implementation.
+  Every feature MUST begin as a standalone library.
+-->
+
+**Library Name**: `[LibraryName]` (in `libs/[feature-name]/`)
+
+**Library Purpose**: [Single, well-defined responsibility - what problem does this library solve?]
+
+**Public Interface**:
+```
+[Sketch the main functions/classes/methods that will be exposed]
+Example:
+- CreateSeries(data: SeriesData): Result<Series, Error>
+- GetSeries(id: Guid): Option<Series>
+- UpdateSeries(id: Guid, data: SeriesData): Result<Series, Error>
+```
+
+**Dependencies**: [List required external dependencies - keep minimal]
+
+**Testing Strategy**:
+- Unit tests: [What will be tested in isolation]
+- Integration tests: [What will be tested with real dependencies]
+- Contract tests: [What contracts must be validated before implementation]
+
+**Framework Independence**: [Explain how library remains framework-agnostic or justify framework coupling]
+
 ## Success Criteria *(mandatory)*
 
 <!--

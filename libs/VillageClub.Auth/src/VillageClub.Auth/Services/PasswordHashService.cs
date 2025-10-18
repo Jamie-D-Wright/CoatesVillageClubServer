@@ -1,6 +1,4 @@
-using BCrypt.Net;
-
-namespace VillageClub.Membership.Services;
+namespace VillageClub.Auth.Services;
 
 /// <summary>
 /// Service for secure password hashing and verification using BCrypt.

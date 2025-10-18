@@ -1,29 +1,44 @@
 # Coates Village Club Server Constitution
 
 <!--
-Version Change: 2.0.0 → 2.1.0 (Minor Update)
+Version Change: 2.1.0 → 2.2.0 (Minor Update)
 
 MINOR changes:
-- Added build warning handling requirements
-- Added XML documentation standards
-- Enhanced Code Quality Standards with warning management
-- Updated Development Process to include warning resolution step
-- Added build warning metrics to Quality Metrics
+- Enhanced Test-First Development principle with realistic testing requirements
+- Added Library-First Development as Principle VIII
+- Updated Comprehensive Testing principle with realistic environment requirements
+- Enhanced Development Process with explicit TDD workflow steps
+- Added contract testing requirements
 
 Modified sections:
-- Code Quality Standards: Added build warning requirements and documentation standards
-- Development Process: Added step 7 for warning resolution
-- Quality Metrics: Added "Build Warnings: 0 in production code" and "Public API Documentation: 100%"
+- Test-First Development (Principle I): Added explicit TDD workflow steps and failure verification
+- Comprehensive Testing (Principle IV): Added realistic testing environment requirements, contract testing mandate
+- Added new Principle VIII: Library-First Development
+- Development Process: Enhanced with explicit TDD workflow (write tests, verify failure, implement, verify pass)
+
+Added sections:
+- Principle VIII: Library-First Development
 
 Rationale:
-Recent experience showed need for explicit guidance on handling analyzer warnings.
-Clean builds improve code quality, maintainability, and developer experience.
-Clear distinction between production code (zero warnings) and test code (selective suppression)
-ensures professional codebase while maintaining pragmatic test development.
+Recent experience showed need for explicit guidance on TDD workflow discipline (red-green-refactor).
+Realistic testing environments (real databases, actual services) improve test reliability and catch
+integration issues earlier. Library-first approach ensures reusability, better architecture, and
+prevents tight coupling between features and application code. Contract testing before implementation
+ensures clear interfaces and prevents integration surprises.
 
-Templates requiring updates: None (process enhancement only)
+Templates requiring updates:
+✅ Updated: Constitution file
+✅ Updated: .specify/templates/plan-template.md (added library structure to monorepo layout)
+✅ Updated: .specify/templates/spec-template.md (added mandatory Library Design section)
+✅ Updated: .specify/templates/tasks-template.md (added Library Design and Implementation phases)
 
-Follow-up TODOs: None
+All templates now reflect:
+- Library-First Development workflow (design → implement → integrate)
+- Explicit TDD Red-Green-Refactor cycle with verification steps
+- Realistic testing environments (real databases, actual services)
+- Contract testing requirements before implementation
+
+Follow-up TODOs: None - all templates updated
 -->
 
 ## Project Overview
@@ -106,10 +121,20 @@ CoatesVillageClubServer/
 ## Core Principles
 
 ### I. Test-First Development (NON-NEGOTIABLE)
-All code MUST be developed following Test-Driven Development (TDD) principles:
-- Tests MUST be written before implementation code
-- Tests MUST fail initially to verify test validity
-- Implementation MUST be written to make tests pass
+All code MUST be developed following Test-Driven Development (TDD) principles with strict Red-Green-Refactor discipline:
+
+**TDD Workflow (MANDATORY)**:
+1. **Write Test First**: Write a test for the next unit of functionality
+2. **Verify RED**: Run the test and confirm it FAILS (proves test validity)
+3. **Write Minimal Code**: Implement just enough to make the test pass
+4. **Verify GREEN**: Run the test and confirm it PASSES
+5. **Refactor**: Clean up code while keeping tests green
+6. **Repeat**: Continue cycle for next unit of functionality
+
+**Test Requirements**:
+- Tests MUST be written before implementation code (NO exceptions)
+- Tests MUST fail initially to verify test validity (RED phase verification)
+- Implementation MUST be written to make tests pass (GREEN phase)
 - Only tested code can be committed to the repository
 - Test coverage MUST be maintained at 80% or higher
 - Tests MUST follow the Arrange-Act-Assert pattern:
@@ -122,7 +147,7 @@ All code MUST be developed following Test-Driven Development (TDD) principles:
 - Each test MUST focus on a single method or behavior
 - Test names MUST clearly describe the scenario being tested
 
-Rationale: TDD ensures code reliability, maintains quality standards, and provides living documentation of intended behavior. Proper test structure ensures tests validate actual implementation behavior rather than mocked responses.
+Rationale: TDD with explicit Red-Green-Refactor discipline ensures code reliability, maintains quality standards, and provides living documentation of intended behavior. Verifying tests fail before implementing prevents false positives and ensures tests actually validate the implementation. Proper test structure ensures tests validate actual implementation behavior rather than mocked responses.
 
 ### II. Code Quality Standards
 Code MUST adhere to established quality metrics and practices:
@@ -169,15 +194,34 @@ Performance requirements MUST be defined and validated:
 Rationale: Performance is a feature that affects user experience and operational costs.
 
 ### IV. Comprehensive Testing
-Multiple testing levels MUST be implemented and maintained:
+Multiple testing levels MUST be implemented and maintained with realistic environments:
+
+**Testing Levels**:
 - Unit tests for individual components
 - Integration tests for component interactions
 - End-to-end tests for critical user flows
 - Load tests for performance validation
 - Security tests for vulnerability detection
+- Contract tests for service interfaces (MANDATORY before implementation)
 - Tests MUST be automated and repeatable
 
-Rationale: Comprehensive testing ensures reliability and catches issues early.
+**Realistic Testing Environments (MANDATORY)**:
+- Tests MUST use real databases over mocks where practical
+  - Use in-memory or containerized databases for integration tests
+  - Connection strings and schemas MUST match production structure
+  - Test data MUST represent realistic scenarios
+- Tests MUST use actual service instances over stubs where practical
+  - Integration tests MUST test real inter-service communication
+  - Use test containers or dedicated test environments
+  - Mock only external third-party services (payment gateways, SMS providers)
+- Contract tests are MANDATORY before implementation
+  - Service interfaces MUST be defined and tested before implementation begins
+  - Consumer-driven contract tests MUST validate service agreements
+  - Contract violations MUST fail the build
+- Test environments MUST be isolated and reproducible
+- Test data MUST be deterministic and resettable
+
+Rationale: Comprehensive testing with realistic environments ensures reliability and catches integration issues early. Real databases and services reveal actual behavior, connection issues, and performance characteristics that mocks cannot simulate. Contract testing before implementation prevents integration surprises and ensures clear service boundaries.
 
 ### V. Maintainable Architecture
 Architecture MUST follow proven design principles:
@@ -223,6 +267,34 @@ The monorepo MUST support independent microservice lifecycle:
 
 Rationale: Independent deployability enables faster iteration, reduces blast radius of changes, and allows horizontal scaling of individual services based on load patterns.
 
+### VIII. Library-First Development (NON-NEGOTIABLE)
+Every feature MUST begin as a standalone library before application integration:
+
+**Library Extraction Requirements**:
+- All new features MUST be implemented as libraries in `libs/` first
+- Features MUST NOT be implemented directly in service code
+- Libraries MUST be designed for reusability across multiple services
+- Libraries MUST have clear, well-defined interfaces
+- Libraries MUST be independently testable without service dependencies
+- Application code MUST only orchestrate library components
+
+**Library Design Principles**:
+- Each library MUST have a single, well-defined responsibility
+- Libraries MUST be framework-agnostic where possible
+- Libraries MUST expose pure functions or stateless classes
+- Dependencies MUST be injected, not hard-coded
+- Libraries MUST include comprehensive unit tests
+- Libraries MUST have complete API documentation
+
+**Integration Process**:
+1. Design library interface and contracts
+2. Implement library with full test coverage
+3. Verify library works in isolation
+4. Integrate library into service(s)
+5. Test service integration with library
+
+Rationale: Library-first development ensures reusability, prevents tight coupling between features and application code, promotes better architecture through clear interface design, and enables testing features in isolation before service integration. This approach makes code more maintainable and reduces duplication across services.
+
 ## Quality Metrics
 The following metrics MUST be tracked and maintained:
 
@@ -262,20 +334,36 @@ The following metrics MUST be tracked and maintained:
 ## Development Process
 1. Identify affected service(s) in feature specification
 2. Create feature branch from main
-3. Write tests following TDD principles (per-service and integration)
-4. Implement feature to pass tests
-5. Update API contracts in `libs/contracts/` if interfaces change
-6. Verify quality metrics compliance for affected services
-7. Address all build warnings before committing:
-   - Fix documentation warnings in production code
-   - Add XML documentation to all public APIs
-   - Configure NoWarn for acceptable test project warnings
-   - Document any intentional TODOs with context
-8. Run service-specific test suite
-9. Run cross-service integration tests if multiple services affected
-10. Update Architecture Decision Records (ADRs) if architectural changes made
-11. Conduct code review
-12. Merge only if all checks pass (zero warnings in production code)
+3. **Design library interface first** (Library-First Development):
+   - Define library interface and contracts in `libs/`
+   - Document expected behavior and API surface
+   - Create contract tests for library interface
+4. **Follow strict TDD workflow** (Red-Green-Refactor):
+   - Write unit test for next functionality
+   - **Run test and verify it FAILS (RED phase)**
+   - Write minimal implementation code
+   - **Run test and verify it PASSES (GREEN phase)**
+   - Refactor while keeping tests green
+   - Repeat for each unit of functionality
+5. Implement library with realistic test environments:
+   - Use real databases in integration tests (in-memory or containerized)
+   - Use actual service instances for inter-service tests
+   - Mock only external third-party services
+6. Verify library works in isolation before service integration
+7. Integrate library into service(s)
+8. Write service integration tests following TDD workflow
+9. Update API contracts in `libs/contracts/` if service interfaces change
+10. Verify quality metrics compliance for affected services
+11. Address all build warnings before committing:
+    - Fix documentation warnings in production code
+    - Add XML documentation to all public APIs
+    - Configure NoWarn for acceptable test project warnings
+    - Document any intentional TODOs with context
+12. Run service-specific test suite
+13. Run cross-service integration tests if multiple services affected
+14. Update Architecture Decision Records (ADRs) if architectural changes made
+15. Conduct code review
+16. Merge only if all checks pass (zero warnings in production code, all tests GREEN)
 
 **For multi-service features**:
 - Changes MUST be backward compatible OR coordinated deployment plan MUST be documented
@@ -307,4 +395,4 @@ All pull requests MUST verify compliance with these principles. Exceptions requi
 - Breaking changes require migration plan and version bump
 - New services require ADR documenting justification and boundaries
 
-**Version**: 2.1.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-18
+**Version**: 2.2.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-18

@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\libs\VillageClub.Contracts\VillageClub.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\VillageClub.Auth\src\VillageClub.Auth\VillageClub.Auth.csproj" />
   </ItemGroup>
 
 </Project>

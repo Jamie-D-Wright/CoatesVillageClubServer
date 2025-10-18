@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using VillageClub.Auth.Services;
 using VillageClub.Contracts.Auth;
 using VillageClub.Contracts.Enums;
 using VillageClub.Contracts.Models;

@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using VillageClub.Auth.Services;
 using VillageClub.Contracts.Auth;
 using VillageClub.Contracts.Enums;
 using VillageClub.Membership.Data;

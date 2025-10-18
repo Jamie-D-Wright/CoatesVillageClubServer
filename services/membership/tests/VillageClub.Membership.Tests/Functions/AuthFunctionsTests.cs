@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using VillageClub.Auth.Services;
 using VillageClub.Contracts.Auth;
 using VillageClub.Contracts.Enums;
 using VillageClub.Contracts.Models;
@@ -61,7 +62,10 @@ public class AuthFunctionsTests : FunctionTestBase
 
         // Add services
         services.AddScoped<IPasswordHashService, PasswordHashService>();
-        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddSingleton<IJwtTokenService>(sp =>
+        {
+            return new JwtTokenService("VillageClub", "VillageClub.Api", 15, null);
+        });
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IAuthService, AuthService>();
 

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using VillageClub.Auth.Services;
 using VillageClub.Contracts.Enums;
 using VillageClub.Contracts.Models;
 using VillageClub.Membership.Data;

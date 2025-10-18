@@ -5,35 +5,53 @@ using Microsoft.IdentityModel.Tokens;
 using VillageClub.Contracts.Auth;
 using TokenValidationResult = VillageClub.Contracts.Auth.TokenValidationResult;
 
-namespace VillageClub.Membership.Services;
+namespace VillageClub.Auth.Services;
 
 /// <summary>
-/// Service for JWT token generation and validation using RSA keys
+/// Service for JWT token generation and validation using RSA keys.
 /// </summary>
 public class JwtTokenService : IJwtTokenService
 {
     private readonly RSA _rsa;
-
     private readonly string _issuer;
-
     private readonly string _audience;
-
     private readonly int _accessTokenExpirationMinutes;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JwtTokenService"/> class.
     /// </summary>
-    public JwtTokenService()
+    /// <param name="issuer">JWT issuer.</param>
+    /// <param name="audience">JWT audience.</param>
+    /// <param name="accessTokenExpirationMinutes">Access token expiration in minutes.</param>
+    /// <param name="privateKey">Optional RSA private key (base64 encoded). If null, generates new key.</param>
+    public JwtTokenService(
+        string issuer,
+        string audience,
+        int accessTokenExpirationMinutes = 15,
+        string? privateKey = null)
     {
-        _rsa = RSA.Create(2048);
-        _issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "VillageClub.Membership";
-        _audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "VillageClub";
-        _accessTokenExpirationMinutes = int.TryParse(Environment.GetEnvironmentVariable("JWT_ACCESS_TOKEN_EXPIRATION_MINUTES"), out var accessMinutes)
-            ? accessMinutes
-            : 15;
+        if (string.IsNullOrWhiteSpace(issuer))
+        {
+            throw new ArgumentException("Issuer cannot be null or empty", nameof(issuer));
+        }
 
-        // Load RSA keys from environment variables if available
-        var privateKey = Environment.GetEnvironmentVariable("JWT_PRIVATE_KEY");
+        if (string.IsNullOrWhiteSpace(audience))
+        {
+            throw new ArgumentException("Audience cannot be null or empty", nameof(audience));
+        }
+
+        if (accessTokenExpirationMinutes <= 0)
+        {
+            throw new ArgumentException("Access token expiration must be greater than 0", nameof(accessTokenExpirationMinutes));
+        }
+
+        _issuer = issuer;
+        _audience = audience;
+        _accessTokenExpirationMinutes = accessTokenExpirationMinutes;
+
+        _rsa = RSA.Create(2048);
+
+        // Load RSA private key if provided
         if (!string.IsNullOrEmpty(privateKey))
         {
             _rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
@@ -52,9 +70,9 @@ public class JwtTokenService : IJwtTokenService
     {
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-            new Claim(ClaimTypes.Email, email),
-            new Claim(ClaimTypes.Role, role),
+            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new(ClaimTypes.Email, email),
+            new(ClaimTypes.Role, role),
         };
 
         if (!string.IsNullOrEmpty(committeeRole))

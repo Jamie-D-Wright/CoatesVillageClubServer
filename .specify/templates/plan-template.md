@@ -75,7 +75,11 @@ services/
 libs/
 ├── common-types/            # Shared data models and interfaces
 ├── common-utils/            # Utility functions, helpers
-└── contracts/               # Service contracts and API definitions
+├── contracts/               # Service contracts and API definitions
+└── [feature-name]/          # NEW FEATURE as library (Library-First Development)
+    ├── src/
+    ├── tests/               # Library unit tests
+    └── README.md            # Library documentation
 
 tests/
 └── e2e/                     # Cross-service end-to-end tests
