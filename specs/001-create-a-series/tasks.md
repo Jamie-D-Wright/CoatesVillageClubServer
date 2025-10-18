@@ -94,7 +94,7 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 - [X] T034F [US1] [TDD] Write unit tests for FluentValidation validators (valid/invalid inputs, edge cases) - `tests/Validators/ValidatorTests.cs`
 - [X] T034G [US1] [TDD] Write integration tests for AuthFunctions (HTTP requests, validation, status codes) - `tests/Functions/AuthFunctionsTests.cs` - 23 passing, 2 skipped pending JWT middleware
 - [X] T034H [US1] Create UserFunctions in `services/membership/src/VillageClub.Membership/Functions/UserFunctions.cs` (GET/POST/PUT/DELETE /api/v1/users, GET /api/v1/users/me)
-- [ ] T034I [US1] [TDD] Write integration tests for UserFunctions (CRUD endpoints, pagination, authorization) - `tests/Functions/UserFunctionsTests.cs`
+- [X] T034I [US1] [TDD] Write integration tests for UserFunctions (CRUD endpoints, pagination, authorization) - `tests/Functions/UserFunctionsTests.cs`
 - [ ] T035 [US1] Add JWT validation middleware/filter for protected endpoints in Membership service
 - [ ] T035A [US1] [TDD] Write tests for JWT middleware (valid/invalid/expired tokens, missing tokens, role-based access)
 - [ ] T036 [US1] Add role-based authorization attributes (Committee only for user management endpoints)

@@ -1,41 +1,29 @@
 # Coates Village Club Server Constitution
 
 <!--
-Version Change: 1.1.0 → 2.0.0 (Major Architecture Update)
-
-MAJOR changes (backward incompatible):
-- Added Microservices Architecture principle (new governance requirement)
-- Modified Maintainable Architecture to include microservices constraints
-- Added Monorepo Structure section (new structural requirement)
+Version Change: 2.0.0 → 2.1.0 (Minor Update)
 
 MINOR changes:
-- Added Service Boundaries principle
-- Expanded Quality Metrics to include service-level metrics
-- Added Architecture Decision Records requirement
+- Added build warning handling requirements
+- Added XML documentation standards
+- Enhanced Code Quality Standards with warning management
+- Updated Development Process to include warning resolution step
+- Added build warning metrics to Quality Metrics
 
-Modified principles:
-- Principle V: Maintainable Architecture (expanded to include microservices)
+Modified sections:
+- Code Quality Standards: Added build warning requirements and documentation standards
+- Development Process: Added step 7 for warning resolution
+- Quality Metrics: Added "Build Warnings: 0 in production code" and "Public API Documentation: 100%"
 
-Added principles:
-- Service Boundaries
-- Microservices Architecture
+Rationale:
+Recent experience showed need for explicit guidance on handling analyzer warnings.
+Clean builds improve code quality, maintainability, and developer experience.
+Clear distinction between production code (zero warnings) and test code (selective suppression)
+ensures professional codebase while maintaining pragmatic test development.
 
-Added sections:
-- Monorepo Structure
-- Service Catalog
-- Architecture Decision Records (ADR)
+Templates requiring updates: None (process enhancement only)
 
-Removed sections: None
-
-Templates requiring updates:
-✅ .specify/templates/plan-template.md (updated project structure options)
-✅ .specify/templates/spec-template.md (verified compatibility)
-✅ .specify/templates/tasks-template.md (verified service-aware task organization)
-
-Follow-up TODOs:
-- Establish ADR process and create initial ADRs for each microservice
-- Define inter-service communication contracts
-- Document API Gateway patterns
+Follow-up TODOs: None
 -->
 
 ## Project Overview
@@ -144,6 +132,14 @@ Code MUST adhere to established quality metrics and practices:
 - Classes MUST have single responsibility
 - Code duplication MUST be less than 5%
 - All code MUST pass linting and static analysis
+- Build warnings MUST be addressed:
+  - Production code MUST have zero warnings
+  - Test code MAY suppress style warnings via NoWarn configuration
+  - Intentional TODO comments are acceptable with justification
+  - Documentation warnings (SA1600, SA1601, etc.) MUST be fixed in production code
+  - Style warnings (SA1124, SA1202, etc.) MAY be suppressed in test projects
+  - All public APIs MUST have complete XML documentation
+  - Documentation MUST follow StyleCop standards (periods, proper formatting)
 - Strict separation of concerns MUST be maintained:
   - Business logic MUST be separated from infrastructure concerns
   - Data access MUST be isolated from business logic
@@ -237,6 +233,8 @@ The following metrics MUST be tracked and maintained:
 - Method Length: ≤30 lines
 - Class Size: ≤200 lines
 - Documentation Coverage: ≥90%
+- Build Warnings: 0 in production code
+- Public API Documentation: 100%
 
 ### Performance Metrics (Per Service)
 - API Response Time: P95 ≤200ms
@@ -268,11 +266,16 @@ The following metrics MUST be tracked and maintained:
 4. Implement feature to pass tests
 5. Update API contracts in `libs/contracts/` if interfaces change
 6. Verify quality metrics compliance for affected services
-7. Run service-specific test suite
-8. Run cross-service integration tests if multiple services affected
-9. Update Architecture Decision Records (ADRs) if architectural changes made
-10. Conduct code review
-11. Merge only if all checks pass
+7. Address all build warnings before committing:
+   - Fix documentation warnings in production code
+   - Add XML documentation to all public APIs
+   - Configure NoWarn for acceptable test project warnings
+   - Document any intentional TODOs with context
+8. Run service-specific test suite
+9. Run cross-service integration tests if multiple services affected
+10. Update Architecture Decision Records (ADRs) if architectural changes made
+11. Conduct code review
+12. Merge only if all checks pass (zero warnings in production code)
 
 **For multi-service features**:
 - Changes MUST be backward compatible OR coordinated deployment plan MUST be documented
@@ -304,4 +307,4 @@ All pull requests MUST verify compliance with these principles. Exceptions requi
 - Breaking changes require migration plan and version bump
 - New services require ADR documenting justification and boundaries
 
-**Version**: 2.0.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-18
+**Version**: 2.1.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-18

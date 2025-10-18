@@ -149,15 +149,16 @@ public class UserFunctions
             }
 
             var user = await _userService.CreateAsync(createRequest);
-            if (user == null)
-            {
-                return await CreateErrorResponse(req, HttpStatusCode.Conflict, "User with this email already exists");
-            }
 
             var response = req.CreateResponse(HttpStatusCode.Created);
             await response.WriteAsJsonAsync(user);
             response.Headers.Add("Location", $"/api/users/{user.Id}");
             return response;
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("email already exists"))
+        {
+            _logger.LogWarning(ex, "Attempt to create user with existing email");
+            return await CreateErrorResponse(req, HttpStatusCode.Conflict, "User with this email already exists");
         }
         catch (Exception ex)
         {
