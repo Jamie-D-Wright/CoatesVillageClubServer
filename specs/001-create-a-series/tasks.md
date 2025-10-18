@@ -3,7 +3,13 @@
 **Input**: Design documents from `/specs/001-create-a-series/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 
-**Tests**: Tests are NOT requested in the feature specification. TDD is NOT required for this feature.
+**Tests**: Test-Driven Development (TDD) is REQUIRED per organizational constitution. All implementation must follow Red-Green-Refactor cycle.
+
+**TDD Workflow**: For each feature:
+1. Write failing test(s) first (Red)
+2. Implement minimum code to pass tests (Green)
+3. Refactor while keeping tests green
+4. Commit with tests passing
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -67,28 +73,39 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 
 ### Implementation for User Story 1
 
-- [ ] T021 [P] [US1] Create User entity `services/membership/src/VillageClub.Membership/Data/Entities/User.cs` with all fields from data-model.md
-- [ ] T022 [P] [US1] Create RefreshToken entity `services/membership/src/VillageClub.Membership/Data/Entities/RefreshToken.cs`
-- [ ] T023 [P] [US1] Create AuditLog entity `services/membership/src/VillageClub.Membership/Data/Entities/AuditLog.cs`
-- [ ] T024 [US1] Configure User entity in MembershipDbContext with indexes (IX_Users_Email, IX_Users_Role, IX_Users_Status)
-- [ ] T025 [US1] Generate and apply EF Core migrations for Membership schema using `dotnet ef migrations add InitialMembershipSchema`
-- [ ] T026 [P] [US1] Create UserDto, CreateUserRequest, UpdateUserRequest models in `services/membership/src/VillageClub.Membership/Models/`
-- [ ] T027 [P] [US1] Create LoginRequest, LoginResponse, RefreshTokenRequest DTOs in `services/membership/src/VillageClub.Membership/Models/`
-- [ ] T028 [P] [US1] Create FluentValidation validators for CreateUserRequest (email regex, password strength, name validation) in `services/membership/src/VillageClub.Membership/Validators/`
-- [ ] T029 [US1] Implement JwtTokenService in `services/membership/src/VillageClub.Membership/Services/JwtTokenService.cs` (generate JWT with role claims, validate, refresh)
-- [ ] T030 [US1] Implement PasswordHashService in `services/membership/src/VillageClub.Membership/Services/PasswordHashService.cs` using BCrypt
-- [ ] T031 [US1] Implement AuthService in `services/membership/src/VillageClub.Membership/Services/AuthService.cs` (login, logout, refresh token rotation)
-- [ ] T032 [US1] Implement UserService in `services/membership/src/VillageClub.Membership/Services/UserService.cs` (CRUD operations, role assignment, audit logging)
-- [ ] T033 [US1] Create AuthFunctions in `services/membership/src/VillageClub.Membership/Functions/AuthFunctions.cs` (POST /api/v1/auth/login, /refresh, /logout)
-- [ ] T034 [US1] Create UserFunctions in `services/membership/src/VillageClub.Membership/Functions/UserFunctions.cs` (GET/POST/PUT/DELETE /api/v1/users, GET /api/v1/users/me)
+- [X] T021 [P] [US1] Create User entity `services/membership/src/VillageClub.Membership/Data/Entities/User.cs` with all fields from data-model.md
+- [X] T022 [P] [US1] Create RefreshToken entity `services/membership/src/VillageClub.Membership/Data/Entities/RefreshToken.cs`
+- [X] T023 [P] [US1] Create AuditLog entity `services/membership/src/VillageClub.Membership/Data/Entities/AuditLog.cs`
+- [X] T024 [US1] Configure User entity in MembershipDbContext with indexes (IX_Users_Email, IX_Users_Role, IX_Users_Status)
+- [X] T025 [US1] Generate and apply EF Core migrations for Membership schema using `dotnet ef migrations add InitialMembershipSchema`
+- [X] T026 [P] [US1] Create UserDto, CreateUserRequest, UpdateUserRequest models in `services/membership/src/VillageClub.Membership/Models/`
+- [X] T027 [P] [US1] Create LoginRequest, LoginResponse, RefreshTokenRequest DTOs in `services/membership/src/VillageClub.Membership/Models/`
+- [X] T028 [P] [US1] Create FluentValidation validators for CreateUserRequest (email regex, password strength, name validation) in `services/membership/src/VillageClub.Membership/Validators/`
+- [X] T029 [US1] Implement JwtTokenService in `services/membership/src/VillageClub.Membership/Services/JwtTokenService.cs` (generate JWT with role claims, validate, refresh)
+- [X] T030 [US1] Implement PasswordHashService in `services/membership/src/VillageClub.Membership/Services/PasswordHashService.cs` using BCrypt
+- [X] T031 [US1] Implement AuthService in `services/membership/src/VillageClub.Membership/Services/AuthService.cs` (login, logout, refresh token rotation)
+- [X] T032 [US1] Implement UserService in `services/membership/src/VillageClub.Membership/Services/UserService.cs` (CRUD operations, role assignment, audit logging)
+- [X] T033 [US1] Create AuthFunctions in `services/membership/src/VillageClub.Membership/Functions/AuthFunctions.cs` (POST /api/v1/auth/login, /refresh, /logout)
+- [ ] T034A [US1] [TDD] Create test project `services/membership/tests/VillageClub.Membership.Tests/VillageClub.Membership.Tests.csproj` with xUnit, Moq, FluentAssertions
+- [ ] T034B [US1] [TDD] Write unit tests for PasswordHashService (hash generation, verification, invalid passwords) - `tests/Services/PasswordHashServiceTests.cs`
+- [ ] T034C [US1] [TDD] Write unit tests for JwtTokenService (token generation, validation, expiration, invalid tokens, RSA key handling) - `tests/Services/JwtTokenServiceTests.cs`
+- [ ] T034D [US1] [TDD] Write unit tests for AuthService (login success/failure, registration, token refresh, revoke, password change) - `tests/Services/AuthServiceTests.cs`
+- [ ] T034E [US1] [TDD] Write unit tests for UserService (CRUD operations, duplicate email, audit logging, pagination) - `tests/Services/UserServiceTests.cs`
+- [ ] T034F [US1] [TDD] Write unit tests for FluentValidation validators (valid/invalid inputs, edge cases) - `tests/Validators/ValidatorTests.cs`
+- [ ] T034G [US1] [TDD] Write integration tests for AuthFunctions (HTTP requests, validation, status codes) - `tests/Functions/AuthFunctionsTests.cs`
+- [ ] T034H [US1] Create UserFunctions in `services/membership/src/VillageClub.Membership/Functions/UserFunctions.cs` (GET/POST/PUT/DELETE /api/v1/users, GET /api/v1/users/me)
+- [ ] T034I [US1] [TDD] Write integration tests for UserFunctions (CRUD endpoints, pagination, authorization) - `tests/Functions/UserFunctionsTests.cs`
 - [ ] T035 [US1] Add JWT validation middleware/filter for protected endpoints in Membership service
+- [ ] T035A [US1] [TDD] Write tests for JWT middleware (valid/invalid/expired tokens, missing tokens, role-based access)
 - [ ] T036 [US1] Add role-based authorization attributes (Committee only for user management endpoints)
+- [ ] T036A [US1] [TDD] Write tests for role-based authorization (correct roles allowed, incorrect roles denied)
 - [ ] T037 [US1] Configure Serilog structured logging to Application Insights in Program.cs
 - [ ] T038 [US1] Add exception handling middleware with proper HTTP status codes and ErrorResponse DTOs
+- [ ] T038A [US1] [TDD] Write tests for exception handling middleware (unhandled exceptions, validation errors, proper error responses)
 - [ ] T039 [US1] Create `services/membership/Dockerfile` for containerized deployment
 - [ ] T040 [US1] Update `infrastructure/main.bicep` to deploy Membership function app with connection strings
 
-**Checkpoint**: User Story 1 complete - Users can be created, authenticated, and role-based access control works
+**Checkpoint**: User Story 1 complete - Users can be created, authenticated, and role-based access control works. All tests passing.
 
 ---
 

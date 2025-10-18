@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using VillageClub.Contracts.Enums;
 using VillageClub.Membership.Data.Entities;
 
 namespace VillageClub.Membership.Data;
@@ -67,7 +68,7 @@ public class MembershipDbContext : DbContext
             entity.Property(e => e.Status)
                 .IsRequired()
                 .HasMaxLength(20)
-                .HasDefaultValue("Active")
+                .HasDefaultValue(UserStatus.Active)
                 .HasConversion<string>();
             
             entity.Property(e => e.CreatedAt)

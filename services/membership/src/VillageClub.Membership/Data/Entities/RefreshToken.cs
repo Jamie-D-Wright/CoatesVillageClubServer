@@ -18,4 +18,6 @@ public class RefreshToken
     public DateTime? RevokedAt { get; set; }
 
     public string? ReplacedByToken { get; set; }
+
+    public User? User { get; set; }
 }
