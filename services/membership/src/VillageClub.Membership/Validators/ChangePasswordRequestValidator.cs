@@ -4,10 +4,13 @@ using VillageClub.Membership.Models;
 namespace VillageClub.Membership.Validators;
 
 /// <summary>
-/// Validator for ChangePasswordRequest
+/// Validator for ChangePasswordRequest.
 /// </summary>
 public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRequest>
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ChangePasswordRequestValidator"/> class.
+    /// </summary>
     public ChangePasswordRequestValidator()
     {
         RuleFor(x => x.CurrentPassword)

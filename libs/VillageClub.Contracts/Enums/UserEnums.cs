@@ -1,74 +1,74 @@
 namespace VillageClub.Contracts.Enums;
 
 /// <summary>
-/// User roles in the Village Club system
+/// User roles in the Village Club system.
 /// </summary>
 public enum UserRole
 {
     /// <summary>
-    /// Regular club member (can view events, use bar)
+    /// Regular club member (can view events, use bar).
     /// </summary>
     Member,
 
     /// <summary>
-    /// Volunteer (can sign up for shifts, report stock issues)
+    /// Volunteer (can sign up for shifts, report stock issues).
     /// </summary>
     Volunteer,
 
     /// <summary>
-    /// Committee member (full administrative access)
+    /// Committee member (full administrative access).
     /// </summary>
     Committee,
 }
 
 /// <summary>
-/// Specific committee roles for granular permissions
+/// Specific committee roles for granular permissions.
 /// </summary>
 public enum CommitteeRole
 {
     /// <summary>
-    /// Committee treasurer (financial approvals)
+    /// Committee treasurer (financial approvals).
     /// </summary>
     Treasurer,
 
     /// <summary>
-    /// Committee chairman
+    /// Committee chairman.
     /// </summary>
     Chairman,
 
     /// <summary>
-    /// Committee clerk/secretary
+    /// Committee clerk/secretary.
     /// </summary>
     Clerk,
 
     /// <summary>
-    /// Bar manager (stock management, bar operations)
+    /// Bar manager (stock management, bar operations).
     /// </summary>
     BarManager,
 
     /// <summary>
-    /// General committee member
+    /// General committee member.
     /// </summary>
     General,
 }
 
 /// <summary>
-/// User account status
+/// User account status.
 /// </summary>
 public enum UserStatus
 {
     /// <summary>
-    /// Active account
+    /// Active account.
     /// </summary>
     Active,
 
     /// <summary>
-    /// Inactive account (soft deleted)
+    /// Inactive account (soft deleted).
     /// </summary>
     Inactive,
 
     /// <summary>
-    /// Suspended account (disciplinary action)
+    /// Suspended account (disciplinary action).
     /// </summary>
     Suspended,
 }

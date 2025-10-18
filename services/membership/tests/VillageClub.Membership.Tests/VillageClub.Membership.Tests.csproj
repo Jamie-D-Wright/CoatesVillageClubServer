@@ -7,6 +7,9 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    
+    <!-- Suppress documentation and style warnings for test projects -->
+    <NoWarn>$(NoWarn);CS1591;SA1600;SA1601;SA1602;SA1633;SA0001;SA1124;SA1202;SA1401;SA1402;SA1515;SA1413;SA1513;SA1116;SA1117;S3881;S4144;S2925;S1481</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

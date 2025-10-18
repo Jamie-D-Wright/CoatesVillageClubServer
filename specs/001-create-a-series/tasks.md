@@ -86,14 +86,14 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 - [X] T031 [US1] Implement AuthService in `services/membership/src/VillageClub.Membership/Services/AuthService.cs` (login, logout, refresh token rotation)
 - [X] T032 [US1] Implement UserService in `services/membership/src/VillageClub.Membership/Services/UserService.cs` (CRUD operations, role assignment, audit logging)
 - [X] T033 [US1] Create AuthFunctions in `services/membership/src/VillageClub.Membership/Functions/AuthFunctions.cs` (POST /api/v1/auth/login, /refresh, /logout)
-- [ ] T034A [US1] [TDD] Create test project `services/membership/tests/VillageClub.Membership.Tests/VillageClub.Membership.Tests.csproj` with xUnit, Moq, FluentAssertions
-- [ ] T034B [US1] [TDD] Write unit tests for PasswordHashService (hash generation, verification, invalid passwords) - `tests/Services/PasswordHashServiceTests.cs`
-- [ ] T034C [US1] [TDD] Write unit tests for JwtTokenService (token generation, validation, expiration, invalid tokens, RSA key handling) - `tests/Services/JwtTokenServiceTests.cs`
-- [ ] T034D [US1] [TDD] Write unit tests for AuthService (login success/failure, registration, token refresh, revoke, password change) - `tests/Services/AuthServiceTests.cs`
-- [ ] T034E [US1] [TDD] Write unit tests for UserService (CRUD operations, duplicate email, audit logging, pagination) - `tests/Services/UserServiceTests.cs`
-- [ ] T034F [US1] [TDD] Write unit tests for FluentValidation validators (valid/invalid inputs, edge cases) - `tests/Validators/ValidatorTests.cs`
-- [ ] T034G [US1] [TDD] Write integration tests for AuthFunctions (HTTP requests, validation, status codes) - `tests/Functions/AuthFunctionsTests.cs`
-- [ ] T034H [US1] Create UserFunctions in `services/membership/src/VillageClub.Membership/Functions/UserFunctions.cs` (GET/POST/PUT/DELETE /api/v1/users, GET /api/v1/users/me)
+- [X] T034A [US1] [TDD] Create test project `services/membership/tests/VillageClub.Membership.Tests/VillageClub.Membership.Tests.csproj` with xUnit, Moq, FluentAssertions
+- [X] T034B [US1] [TDD] Write unit tests for PasswordHashService (hash generation, verification, invalid passwords) - `tests/Services/PasswordHashServiceTests.cs`
+- [X] T034C [US1] [TDD] Write unit tests for JwtTokenService (token generation, validation, expiration, invalid tokens, RSA key handling) - `tests/Services/JwtTokenServiceTests.cs`
+- [X] T034D [US1] [TDD] Write unit tests for AuthService (login success/failure, registration, token refresh, revoke, password change) - `tests/Services/AuthServiceTests.cs`
+- [X] T034E [US1] [TDD] Write unit tests for UserService (CRUD operations, duplicate email, audit logging, pagination) - `tests/Services/UserServiceTests.cs`
+- [X] T034F [US1] [TDD] Write unit tests for FluentValidation validators (valid/invalid inputs, edge cases) - `tests/Validators/ValidatorTests.cs`
+- [X] T034G [US1] [TDD] Write integration tests for AuthFunctions (HTTP requests, validation, status codes) - `tests/Functions/AuthFunctionsTests.cs` - 23 passing, 2 skipped pending JWT middleware
+- [X] T034H [US1] Create UserFunctions in `services/membership/src/VillageClub.Membership/Functions/UserFunctions.cs` (GET/POST/PUT/DELETE /api/v1/users, GET /api/v1/users/me)
 - [ ] T034I [US1] [TDD] Write integration tests for UserFunctions (CRUD endpoints, pagination, authorization) - `tests/Functions/UserFunctionsTests.cs`
 - [ ] T035 [US1] Add JWT validation middleware/filter for protected endpoints in Membership service
 - [ ] T035A [US1] [TDD] Write tests for JWT middleware (valid/invalid/expired tokens, missing tokens, role-based access)
@@ -119,13 +119,19 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 
 - [ ] T041 [P] [US6] Install Swashbuckle.AspNetCore (or NSwag) in Membership service for OpenAPI generation
 - [ ] T042 [US6] Configure Swagger/OpenAPI generation in `services/membership/src/VillageClub.Membership/Program.cs` with JWT bearer auth
+- [ ] T042A [US6] [TDD] Write tests for OpenAPI spec generation (verify all endpoints documented, schemas present, JWT security defined)
 - [ ] T043 [US6] Add XML documentation comments to all Membership API endpoints and models
 - [ ] T044 [US6] Create OpenAPI spec `specs/001-create-a-series/contracts/openapi/membership-api.yaml` (auto-generated or manual)
+- [ ] T044A [US6] [TDD] Write tests to validate OpenAPI spec compliance (schema validation, required fields, response codes)
 - [ ] T045 [US6] Configure APIM policies in `infrastructure/modules/apim.bicep` for service discovery endpoint
 - [ ] T046 [US6] Create APIM backend definitions for Membership service with health check integration
+- [ ] T046A [US6] [TDD] Write integration tests for APIM backend health check integration
 - [ ] T047 [P] [US6] Add APIM JWT validation policy using public key from Membership /health endpoint
+- [ ] T047A [US6] [TDD] Write tests for APIM JWT validation (valid tokens pass, invalid/expired tokens rejected)
 - [ ] T048 [P] [US6] Configure APIM CORS policy for UI application access
+- [ ] T048A [US6] [TDD] Write tests for CORS policy (allowed origins, methods, headers)
 - [ ] T049 [US6] Create service registry endpoint in APIM returning all service metadata (name, version, health, OpenAPI URL)
+- [ ] T049A [US6] [TDD] Write tests for service registry endpoint (returns all services, correct metadata format)
 - [ ] T050 [US6] Document APIM gateway URL and authentication flow in `docs/api-gateway.md`
 
 **Checkpoint**: Service discovery works - Developers can find services and view API documentation. MVP Core Ready (US1 + US6)
@@ -141,6 +147,7 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 ### Implementation for User Story 2
 
 - [ ] T051 Create Events service project structure: `services/events/src/VillageClub.Events/VillageClub.Events.csproj`
+- [ ] T051A [US2] [TDD] Create test project `services/events/tests/VillageClub.Events.Tests/VillageClub.Events.Tests.csproj` with xUnit, Moq, FluentAssertions
 - [ ] T052 Add EF Core packages, Azure Functions SDK, reference to VillageClub.Contracts
 - [ ] T053 [P] [US2] Create Event entity `services/events/src/VillageClub.Events/Data/Entities/Event.cs` with all fields from data-model.md
 - [ ] T054 [P] [US2] Create EventType enum (SpecialEvent, RegularBarNight, PrivateHire, Fundraiser) in `services/events/src/VillageClub.Events/Models/`
@@ -149,13 +156,20 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 - [ ] T057 [US2] Generate and apply EF Core migrations for Events schema using `dotnet ef migrations add InitialEventsSchema`
 - [ ] T058 [P] [US2] Create EventDto, CreateEventRequest, UpdateEventRequest models in `services/events/src/VillageClub.Events/Models/`
 - [ ] T059 [P] [US2] Create FluentValidation validators for CreateEventRequest (title length, date validation, duration checks)
+- [ ] T059A [US2] [TDD] Write unit tests for FluentValidation validators (valid/invalid inputs, date logic, edge cases) - `tests/Validators/ValidatorTests.cs`
 - [ ] T060 [US2] Implement EventService in `services/events/src/VillageClub.Events/Services/EventService.cs` (CRUD, state transitions Draft→Published→Completed)
+- [ ] T060A [US2] [TDD] Write unit tests for EventService (CRUD operations, state transitions, validation errors, pagination) - `tests/Services/EventServiceTests.cs`
 - [ ] T061 [US2] Create EventFunctions in `services/events/src/VillageClub.Events/Functions/EventFunctions.cs` (POST/PUT/DELETE /api/v1/events)
+- [ ] T061A [US2] [TDD] Write integration tests for EventFunctions (HTTP requests, validation, status codes, authorization) - `tests/Functions/EventFunctionsTests.cs`
 - [ ] T062 [US2] Create EventQueryFunctions in `services/events/src/VillageClub.Events/Functions/EventQueryFunctions.cs` (GET /api/v1/events with filtering, GET /api/v1/events/{id})
+- [ ] T062A [US2] [TDD] Write integration tests for EventQueryFunctions (filtering, pagination, not found scenarios) - `tests/Functions/EventQueryFunctionsTests.cs`
 - [ ] T063 [US2] Add JWT validation and role-based authorization (Committee only for create/update/delete)
+- [ ] T063A [US2] [TDD] Write tests for JWT validation and authorization (valid/invalid tokens, role permissions)
 - [ ] T064 [US2] Configure DI and logging in `services/events/src/VillageClub.Events/Program.cs`
 - [ ] T065 [US2] Create `services/events/host.json`, `local.settings.json`, health check endpoint
+- [ ] T065A [US2] [TDD] Write integration tests for health check endpoint
 - [ ] T066 [US2] Add Swagger/OpenAPI generation for Events service
+- [ ] T066A [US2] [TDD] Write tests for OpenAPI spec generation and validation
 - [ ] T067 [US2] Create `services/events/Dockerfile` for deployment
 - [ ] T068 [US2] Update `infrastructure/main.bicep` to deploy Events function app
 - [ ] T069 [US2] Add Events service to APIM backend definitions and service registry
@@ -173,6 +187,7 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 ### Implementation for User Story 5
 
 - [ ] T070 Create Finance service project structure: `services/finance/src/VillageClub.Finance/VillageClub.Finance.csproj`
+- [ ] T070A [US5] [TDD] Create test project `services/finance/tests/VillageClub.Finance.Tests/VillageClub.Finance.Tests.csproj` with xUnit, Moq, FluentAssertions
 - [ ] T071 Add EF Core, Azure Functions SDK, Azure.Storage.Blobs, reference to VillageClub.Contracts
 - [ ] T072 [P] [US5] Create Expense entity `services/finance/src/VillageClub.Finance/Data/Entities/Expense.cs` with all fields from data-model.md
 - [ ] T073 [P] [US5] Create Receipt entity `services/finance/src/VillageClub.Finance/Data/Entities/Receipt.cs`
@@ -182,16 +197,26 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 - [ ] T077 [US5] Generate and apply EF Core migrations for Finance schema using `dotnet ef migrations add InitialFinanceSchema`
 - [ ] T078 [P] [US5] Create ExpenseDto, CreateExpenseRequest, ExpenseSummaryDto models in `services/finance/src/VillageClub.Finance/Models/`
 - [ ] T079 [P] [US5] Create FluentValidation validators for CreateExpenseRequest (amount >0, eventId required, receipt validation)
+- [ ] T079A [US5] [TDD] Write unit tests for FluentValidation validators (valid/invalid inputs, amount validation, file validation) - `tests/Validators/ValidatorTests.cs`
 - [ ] T080 [US5] Implement BlobStorageService in `services/finance/src/VillageClub.Finance/Services/BlobStorageService.cs` (upload, generate SAS token, validate file type via magic bytes)
+- [ ] T080A [US5] [TDD] Write unit tests for BlobStorageService (upload success/failure, SAS token generation, magic byte validation, file type rejection) - `tests/Services/BlobStorageServiceTests.cs`
 - [ ] T081 [US5] Implement EventValidationService in `services/finance/src/VillageClub.Finance/Services/EventValidationService.cs` (HTTP client to call Events service, validate event exists, circuit breaker with Polly)
+- [ ] T081A [US5] [TDD] Write unit tests for EventValidationService (event exists, event not found, circuit breaker behavior, timeout handling) - `tests/Services/EventValidationServiceTests.cs`
 - [ ] T082 [US5] Implement ExpenseService in `services/finance/src/VillageClub.Finance/Services/ExpenseService.cs` (submit, approve, reject, reimburse, calculate totals per event)
+- [ ] T082A [US5] [TDD] Write unit tests for ExpenseService (submit with receipt, approve/reject/reimburse workflows, status transitions, calculate totals) - `tests/Services/ExpenseServiceTests.cs`
 - [ ] T083 [US5] Create ExpenseFunctions in `services/finance/src/VillageClub.Finance/Functions/ExpenseFunctions.cs` (POST /api/v1/expenses with multipart receipt upload)
+- [ ] T083A [US5] [TDD] Write integration tests for ExpenseFunctions (multipart upload, validation, authorization) - `tests/Functions/ExpenseFunctionsTests.cs`
 - [ ] T084 [US5] Create ExpenseReviewFunctions in `services/finance/src/VillageClub.Finance/Functions/ExpenseReviewFunctions.cs` (PUT /api/v1/expenses/{id}/approve, /reject, /reimburse)
+- [ ] T084A [US5] [TDD] Write integration tests for ExpenseReviewFunctions (approve/reject/reimburse, Treasurer authorization, invalid status transitions) - `tests/Functions/ExpenseReviewFunctionsTests.cs`
 - [ ] T085 [US5] Create ExpenseQueryFunctions in `services/finance/src/VillageClub.Finance/Functions/ExpenseQueryFunctions.cs` (GET /api/v1/expenses, GET /api/v1/expenses/{id}/receipt returns SAS URL)
+- [ ] T085A [US5] [TDD] Write integration tests for ExpenseQueryFunctions (pagination, filtering, SAS URL generation) - `tests/Functions/ExpenseQueryFunctionsTests.cs`
 - [ ] T086 [US5] Add JWT validation and role-based authorization (Treasurer role for approve/reject/reimburse)
+- [ ] T086A [US5] [TDD] Write tests for JWT validation and role-based authorization (Treasurer vs non-Treasurer access)
 - [ ] T087 [US5] Configure DI, logging, and Azure Blob Storage client with managed identity in Program.cs
 - [ ] T088 [US5] Create `services/finance/host.json`, `local.settings.json`, health check endpoint
+- [ ] T088A [US5] [TDD] Write integration tests for health check endpoint
 - [ ] T089 [US5] Add Swagger/OpenAPI generation for Finance service
+- [ ] T089A [US5] [TDD] Write tests for OpenAPI spec generation and validation
 - [ ] T090 [US5] Create `services/finance/Dockerfile` for deployment
 - [ ] T091 [US5] Update `infrastructure/main.bicep` to deploy Finance function app with Blob Storage connection
 - [ ] T092 [US5] Add Finance service to APIM backend definitions and service registry
@@ -209,6 +234,7 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 ### Implementation for User Story 3
 
 - [ ] T093 Create Scheduling service project structure: `services/scheduling/src/VillageClub.Scheduling/VillageClub.Scheduling.csproj`
+- [ ] T093A [US3] [TDD] Create test project `services/scheduling/tests/VillageClub.Scheduling.Tests/VillageClub.Scheduling.Tests.csproj` with xUnit, Moq, FluentAssertions
 - [ ] T094 Add EF Core packages, Azure Functions SDK, reference to VillageClub.Contracts
 - [ ] T095 [P] [US3] Create Shift entity `services/scheduling/src/VillageClub.Scheduling/Data/Entities/Shift.cs` with all fields from data-model.md
 - [ ] T096 [P] [US3] Create ShiftAssignment entity `services/scheduling/src/VillageClub.Scheduling/Data/Entities/ShiftAssignment.cs`
@@ -218,15 +244,24 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 - [ ] T100 [US3] Generate and apply EF Core migrations for Scheduling schema using `dotnet ef migrations add InitialSchedulingSchema`
 - [ ] T101 [P] [US3] Create ShiftDto, CreateShiftRequest, ShiftAssignmentDto models in `services/scheduling/src/VillageClub.Scheduling/Models/`
 - [ ] T102 [P] [US3] Create FluentValidation validators for CreateShiftRequest (date validation, capacity >0, event validation if EventShift)
+- [ ] T102A [US3] [TDD] Write unit tests for FluentValidation validators (valid/invalid inputs, capacity validation, date logic) - `tests/Validators/ValidatorTests.cs`
 - [ ] T103 [US3] Implement EventValidationService in `services/scheduling/src/VillageClub.Scheduling/Services/EventValidationService.cs` (HTTP client to Events service with Polly circuit breaker)
+- [ ] T103A [US3] [TDD] Write unit tests for EventValidationService (event exists, event not found, circuit breaker behavior, retry logic) - `tests/Services/EventValidationServiceTests.cs`
 - [ ] T104 [US3] Implement ShiftService in `services/scheduling/src/VillageClub.Scheduling/Services/ShiftService.cs` (CRUD shifts, auto-update status to Filled when capacity reached)
+- [ ] T104A [US3] [TDD] Write unit tests for ShiftService (CRUD operations, auto-status update when filled, capacity logic, pagination) - `tests/Services/ShiftServiceTests.cs`
 - [ ] T105 [US3] Implement ShiftAssignmentService in `services/scheduling/src/VillageClub.Scheduling/Services/ShiftAssignmentService.cs` (assign volunteer, validate no overlapping shifts, cancel assignment)
+- [ ] T105A [US3] [TDD] Write unit tests for ShiftAssignmentService (assign volunteer, detect overlapping shifts, cancel assignment, capacity checking) - `tests/Services/ShiftAssignmentServiceTests.cs`
 - [ ] T106 [US3] Create ShiftFunctions in `services/scheduling/src/VillageClub.Scheduling/Functions/ShiftFunctions.cs` (POST/PUT/DELETE /api/v1/shifts)
+- [ ] T106A [US3] [TDD] Write integration tests for ShiftFunctions (CRUD operations, validation, Committee authorization) - `tests/Functions/ShiftFunctionsTests.cs`
 - [ ] T107 [US3] Create ShiftAssignmentFunctions in `services/scheduling/src/VillageClub.Scheduling/Functions/ShiftAssignmentFunctions.cs` (POST/DELETE /api/v1/shifts/{id}/assignments, GET /api/v1/shifts/my-assignments)
+- [ ] T107A [US3] [TDD] Write integration tests for ShiftAssignmentFunctions (sign up, cancel, get my assignments, overlap detection) - `tests/Functions/ShiftAssignmentFunctionsTests.cs`
 - [ ] T108 [US3] Add JWT validation and role-based authorization (Committee for create/update/delete shifts, Volunteer for sign up)
+- [ ] T108A [US3] [TDD] Write tests for JWT validation and role-based authorization (Committee vs Volunteer permissions)
 - [ ] T109 [US3] Configure DI and logging in `services/scheduling/src/VillageClub.Scheduling/Program.cs`
 - [ ] T110 [US3] Create `services/scheduling/host.json`, `local.settings.json`, health check endpoint
+- [ ] T110A [US3] [TDD] Write integration tests for health check endpoint
 - [ ] T111 [US3] Add Swagger/OpenAPI generation for Scheduling service
+- [ ] T111A [US3] [TDD] Write tests for OpenAPI spec generation and validation
 - [ ] T112 [US3] Create `services/scheduling/Dockerfile` for deployment
 - [ ] T113 [US3] Update `infrastructure/main.bicep` to deploy Scheduling function app
 - [ ] T114 [US3] Add Scheduling service to APIM backend definitions and service registry
@@ -244,6 +279,7 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 ### Implementation for User Story 4
 
 - [ ] T115 Create Bar service project structure: `services/bar/src/VillageClub.Bar/VillageClub.Bar.csproj`
+- [ ] T115A [US4] [TDD] Create test project `services/bar/tests/VillageClub.Bar.Tests/VillageClub.Bar.Tests.csproj` with xUnit, Moq, FluentAssertions
 - [ ] T116 Add EF Core packages, Azure Functions SDK, reference to VillageClub.Contracts
 - [ ] T117 [P] [US4] Create StockAlert entity `services/bar/src/VillageClub.Bar/Data/Entities/StockAlert.cs` with all fields from data-model.md
 - [ ] T118 [P] [US4] Create StockUrgency enum (Low, Medium, High) and StockAlertStatus enum in `services/bar/src/VillageClub.Bar/Models/`
@@ -252,12 +288,18 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 - [ ] T121 [US4] Generate and apply EF Core migrations for Bar schema using `dotnet ef migrations add InitialBarSchema`
 - [ ] T122 [P] [US4] Create StockAlertDto, CreateStockAlertRequest models in `services/bar/src/VillageClub.Bar/Models/`
 - [ ] T123 [P] [US4] Create FluentValidation validators for CreateStockAlertRequest (itemName required, urgency valid)
+- [ ] T123A [US4] [TDD] Write unit tests for FluentValidation validators (valid/invalid inputs, urgency validation) - `tests/Validators/ValidatorTests.cs`
 - [ ] T124 [US4] Implement StockAlertService in `services/bar/src/VillageClub.Bar/Services/StockAlertService.cs` (create alert, list active alerts, resolve, group by item)
+- [ ] T124A [US4] [TDD] Write unit tests for StockAlertService (create alert, list/filter alerts, resolve alert, group by item logic) - `tests/Services/StockAlertServiceTests.cs`
 - [ ] T125 [US4] Create StockAlertFunctions in `services/bar/src/VillageClub.Bar/Functions/StockAlertFunctions.cs` (GET/POST /api/v1/stock-alerts, PUT /api/v1/stock-alerts/{id}/resolve)
+- [ ] T125A [US4] [TDD] Write integration tests for StockAlertFunctions (create, list, resolve, authorization by role) - `tests/Functions/StockAlertFunctionsTests.cs`
 - [ ] T126 [US4] Add JWT validation and role-based authorization (Volunteer can create, Committee can resolve)
+- [ ] T126A [US4] [TDD] Write tests for JWT validation and role-based authorization (Volunteer vs Committee permissions)
 - [ ] T127 [US4] Configure DI and logging in `services/bar/src/VillageClub.Bar/Program.cs`
 - [ ] T128 [US4] Create `services/bar/host.json`, `local.settings.json`, health check endpoint
+- [ ] T128A [US4] [TDD] Write integration tests for health check endpoint
 - [ ] T129 [US4] Add Swagger/OpenAPI generation for Bar service
+- [ ] T129A [US4] [TDD] Write tests for OpenAPI spec generation and validation
 - [ ] T130 [US4] Create `services/bar/Dockerfile` for deployment
 - [ ] T131 [US4] Update `infrastructure/main.bicep` to deploy Bar function app
 - [ ] T132 [US4] Add Bar service to APIM backend definitions and service registry
@@ -271,17 +313,24 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 **Purpose**: Production readiness improvements affecting multiple services
 
 - [ ] T133 [P] Add pre-warming timer trigger (Fri/Sat 7:45pm) to each service to mitigate cold starts
+- [ ] T133A [P] [TDD] Write tests for pre-warming timer triggers (verify trigger schedule, execution success)
 - [ ] T134 [P] Configure Application Insights connection for all services in Bicep deployment
 - [ ] T135 Add correlation ID middleware to all services for distributed tracing across service calls
+- [ ] T135A [TDD] Write tests for correlation ID middleware (verify ID propagation, header injection, logging context)
 - [ ] T136 [P] Create integration test project `tests/VillageClub.IntegrationTests/` using Azure Functions local runtime
-- [ ] T137 [P] Create contract test project `tests/VillageClub.ContractTests/` for inter-service API validation
+- [ ] T136A [P] [TDD] Write end-to-end integration tests for cross-service workflows (expense approval flow, shift assignment with events)
+- [ ] T137 [P] Create contract test project `tests/VillageClub.ContegrationTests/` for inter-service API validation
+- [ ] T137A [P] [TDD] Write contract tests for all inter-service API calls (Events validation from Finance/Scheduling)
 - [ ] T138 Add rate limiting policies in APIM to prevent abuse (100 requests/minute per user)
+- [ ] T138A [TDD] Write tests for rate limiting policies (verify throttling, 429 responses, rate limit headers)
 - [ ] T139 Configure Azure SQL Database firewall rules and enable audit logging in Bicep
 - [ ] T140 [P] Create deployment pipeline `azure-pipelines.yml` for CI/CD (build, test, deploy to staging/production)
+- [ ] T140A [P] [TDD] Write tests for CI/CD pipeline stages (verify build, test execution, deployment gates)
 - [ ] T141 [P] Document local development setup in `README.md` based on quickstart.md
 - [ ] T142 Add API versioning strategy documentation in `docs/api-versioning.md`
 - [ ] T143 Create runbook `docs/operations/incident-response.md` for 15-minute RTO scenarios
 - [ ] T144 Validate all quickstart.md scenarios work end-to-end with deployed services
+- [ ] T144A [TDD] Write automated acceptance tests for all quickstart scenarios (user registration to event creation flow)
 
 ---
 
@@ -397,9 +446,11 @@ With **3 developers** after Foundational phase completes:
 
 - **[P] tasks** = different files, no dependencies, can run in parallel
 - **[Story] label** maps task to specific user story (US1-US6) for traceability
+- **[TDD] label** = Test-Driven Development tasks - tests written before or alongside implementation
 - Each user story is independently completable and testable (except dependencies noted)
-- **No TDD approach** - tests are NOT required per feature specification
-- Commit after each task or logical group
+- **TDD is REQUIRED** - All implementation follows Red-Green-Refactor cycle per organizational constitution
+- Test tasks (marked [TDD]) should be completed immediately after their corresponding implementation tasks
+- Commit after each task or logical group with all tests passing
 - Stop at any checkpoint to validate story independently before proceeding
 - **Cost optimization**: Serverless-first architecture scales to zero when idle
 - **Security**: JWT validation at API Gateway, role-based authorization per service

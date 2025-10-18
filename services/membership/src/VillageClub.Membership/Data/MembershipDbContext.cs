@@ -5,22 +5,39 @@ using VillageClub.Membership.Data.Entities;
 namespace VillageClub.Membership.Data;
 
 /// <summary>
-/// Database context for the Membership service
-/// Handles Users, Authentication, and Audit Logging
+/// Database context for the Membership service.
+/// Handles Users, Authentication, and Audit Logging.
 /// </summary>
 public class MembershipDbContext : DbContext
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MembershipDbContext"/> class.
+    /// </summary>
+    /// <param name="options">The options for this context.</param>
     public MembershipDbContext(DbContextOptions<MembershipDbContext> options)
         : base(options)
     {
     }
 
+    /// <summary>
+    /// Gets the Users DbSet.
+    /// </summary>
     public DbSet<User> Users => Set<User>();
 
+    /// <summary>
+    /// Gets the RefreshTokens DbSet.
+    /// </summary>
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    /// <summary>
+    /// Gets the AuditLogs DbSet.
+    /// </summary>
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
+    /// <summary>
+    /// Configures the schema and entity relationships.
+    /// </summary>
+    /// <param name="modelBuilder">The model builder.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

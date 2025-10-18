@@ -7,20 +7,26 @@ using Microsoft.Extensions.Logging;
 namespace VillageClub.Membership.Functions;
 
 /// <summary>
-/// Health check functions for service monitoring and JWT public key distribution
+/// Health check functions for service monitoring and JWT public key distribution.
 /// </summary>
 public class HealthFunctions
 {
     private readonly ILogger<HealthFunctions> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HealthFunctions"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance.</param>
     public HealthFunctions(ILogger<HealthFunctions> logger)
     {
         _logger = logger;
     }
 
     /// <summary>
-    /// Health check endpoint - returns service status and JWT public key
+    /// Health check endpoint - returns service status and JWT public key.
     /// </summary>
+    /// <param name="req">The HTTP request.</param>
+    /// <returns>Health status response.</returns>
     [Function("Health")]
     public async Task<HttpResponseData> GetHealth(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "health")] HttpRequestData req)
@@ -43,7 +49,6 @@ public class HealthFunctions
         return response;
     }
 
-    /// <summary>
     /// <summary>
     /// Readiness check endpoint - verifies database connectivity.
     /// </summary>
