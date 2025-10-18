@@ -1,0 +1,403 @@
+# Tasks: Village Club Management Microservices
+
+**Input**: Design documents from `/specs/001-create-a-series/`
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
+
+**Tests**: Tests are NOT requested in the feature specification. TDD is NOT required for this feature.
+
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+
+## Format: `[ID] [P?] [Story] Description`
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3, US4, US5, US6)
+- Include exact file paths in descriptions
+
+## Path Conventions
+This is a microservices monorepo with 6 independently deployable Azure Function Apps:
+- **Microservices**: `services/[service-name]/src/VillageClub.[ServiceName]/`
+- **Tests**: `services/[service-name]/tests/`
+- **Shared libraries**: `libs/VillageClub.Contracts/`
+- **Infrastructure**: `infrastructure/`
+
+---
+
+## Phase 1: Setup (Shared Infrastructure)
+
+**Purpose**: Repository structure, shared libraries, and infrastructure foundation
+
+- [ ] T001 Create monorepo directory structure: `services/`, `libs/`, `infrastructure/`, `docs/`
+- [ ] T002 [P] Create solution file `CoatesVillageClubServer.sln` at repository root
+- [ ] T003 [P] Create shared contracts library project `libs/VillageClub.Contracts/VillageClub.Contracts.csproj` with DTOs and interfaces
+- [ ] T004 [P] Create `.editorconfig` at root with C# code style rules (max complexity 10, methods ≤30 lines)
+- [ ] T005 [P] Add `Directory.Build.props` at root for shared NuGet package versions and analyzer configuration
+- [ ] T006 [P] Configure SonarAnalyzer.CSharp and code quality analyzers in `Directory.Build.props`
+- [ ] T007 Create `infrastructure/main.bicep` with Azure SQL Database (serverless tier, auto-pause enabled)
+- [ ] T008 [P] Add Bicep module `infrastructure/modules/function-app.bicep` for Azure Functions deployment template
+- [ ] T009 [P] Add Bicep module `infrastructure/modules/apim.bicep` for Azure API Management (Consumption tier)
+- [ ] T010 [P] Add Bicep module `infrastructure/modules/blob-storage.bicep` for receipt storage with lifecycle policies
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+
+- [ ] T011 Create database schemas SQL script `infrastructure/scripts/create-schemas.sql` (Membership, Events, Scheduling, Bar, Finance)
+- [ ] T012 Add shared DTO models to `libs/VillageClub.Contracts/Models/` (UserDto, RoleDto, ErrorResponse, PagedResult)
+- [ ] T013 [P] Add shared authentication interfaces to `libs/VillageClub.Contracts/Auth/` (IJwtTokenService, IAuthContext)
+- [ ] T014 [P] Add shared validation helpers to `libs/VillageClub.Contracts/Validation/` (FluentValidation base validators)
+- [ ] T015 Create Membership service project structure: `services/membership/src/VillageClub.Membership/VillageClub.Membership.csproj`
+- [ ] T016 Add EF Core packages and Azure Functions SDK to Membership service project
+- [ ] T017 Create `services/membership/src/VillageClub.Membership/Data/MembershipDbContext.cs` with Membership schema configuration
+- [ ] T018 Create `services/membership/src/VillageClub.Membership/Program.cs` with DI configuration (EF Core, Azure Identity, Serilog)
+- [ ] T019 Create `services/membership/host.json` and `local.settings.json` for Azure Functions configuration
+- [ ] T020 Add health check endpoint `services/membership/src/VillageClub.Membership/Functions/HealthFunctions.cs` returning JWT public key
+
+**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+
+---
+
+## Phase 3: User Story 1 - User Management and Authentication (Priority: P1) 🎯 MVP
+
+**Goal**: Committee members can manage users across three roles (Committee, Volunteer, Member) with JWT-based authentication and role-based access control
+
+**Independent Test**: Create users with different roles, authenticate, and verify role-based permissions work correctly. No other services required.
+
+### Implementation for User Story 1
+
+- [ ] T021 [P] [US1] Create User entity `services/membership/src/VillageClub.Membership/Data/Entities/User.cs` with all fields from data-model.md
+- [ ] T022 [P] [US1] Create RefreshToken entity `services/membership/src/VillageClub.Membership/Data/Entities/RefreshToken.cs`
+- [ ] T023 [P] [US1] Create AuditLog entity `services/membership/src/VillageClub.Membership/Data/Entities/AuditLog.cs`
+- [ ] T024 [US1] Configure User entity in MembershipDbContext with indexes (IX_Users_Email, IX_Users_Role, IX_Users_Status)
+- [ ] T025 [US1] Generate and apply EF Core migrations for Membership schema using `dotnet ef migrations add InitialMembershipSchema`
+- [ ] T026 [P] [US1] Create UserDto, CreateUserRequest, UpdateUserRequest models in `services/membership/src/VillageClub.Membership/Models/`
+- [ ] T027 [P] [US1] Create LoginRequest, LoginResponse, RefreshTokenRequest DTOs in `services/membership/src/VillageClub.Membership/Models/`
+- [ ] T028 [P] [US1] Create FluentValidation validators for CreateUserRequest (email regex, password strength, name validation) in `services/membership/src/VillageClub.Membership/Validators/`
+- [ ] T029 [US1] Implement JwtTokenService in `services/membership/src/VillageClub.Membership/Services/JwtTokenService.cs` (generate JWT with role claims, validate, refresh)
+- [ ] T030 [US1] Implement PasswordHashService in `services/membership/src/VillageClub.Membership/Services/PasswordHashService.cs` using BCrypt
+- [ ] T031 [US1] Implement AuthService in `services/membership/src/VillageClub.Membership/Services/AuthService.cs` (login, logout, refresh token rotation)
+- [ ] T032 [US1] Implement UserService in `services/membership/src/VillageClub.Membership/Services/UserService.cs` (CRUD operations, role assignment, audit logging)
+- [ ] T033 [US1] Create AuthFunctions in `services/membership/src/VillageClub.Membership/Functions/AuthFunctions.cs` (POST /api/v1/auth/login, /refresh, /logout)
+- [ ] T034 [US1] Create UserFunctions in `services/membership/src/VillageClub.Membership/Functions/UserFunctions.cs` (GET/POST/PUT/DELETE /api/v1/users, GET /api/v1/users/me)
+- [ ] T035 [US1] Add JWT validation middleware/filter for protected endpoints in Membership service
+- [ ] T036 [US1] Add role-based authorization attributes (Committee only for user management endpoints)
+- [ ] T037 [US1] Configure Serilog structured logging to Application Insights in Program.cs
+- [ ] T038 [US1] Add exception handling middleware with proper HTTP status codes and ErrorResponse DTOs
+- [ ] T039 [US1] Create `services/membership/Dockerfile` for containerized deployment
+- [ ] T040 [US1] Update `infrastructure/main.bicep` to deploy Membership function app with connection strings
+
+**Checkpoint**: User Story 1 complete - Users can be created, authenticated, and role-based access control works
+
+---
+
+## Phase 4: User Story 6 - Service Discovery and Documentation (Priority: P1)
+
+**Goal**: Developers can discover services, access API documentation via OpenAPI specs, and integrate with the UI application
+
+**Independent Test**: Query APIM service registry, retrieve OpenAPI specs for each service, verify documentation is complete and accurate
+
+### Implementation for User Story 6
+
+- [ ] T041 [P] [US6] Install Swashbuckle.AspNetCore (or NSwag) in Membership service for OpenAPI generation
+- [ ] T042 [US6] Configure Swagger/OpenAPI generation in `services/membership/src/VillageClub.Membership/Program.cs` with JWT bearer auth
+- [ ] T043 [US6] Add XML documentation comments to all Membership API endpoints and models
+- [ ] T044 [US6] Create OpenAPI spec `specs/001-create-a-series/contracts/openapi/membership-api.yaml` (auto-generated or manual)
+- [ ] T045 [US6] Configure APIM policies in `infrastructure/modules/apim.bicep` for service discovery endpoint
+- [ ] T046 [US6] Create APIM backend definitions for Membership service with health check integration
+- [ ] T047 [P] [US6] Add APIM JWT validation policy using public key from Membership /health endpoint
+- [ ] T048 [P] [US6] Configure APIM CORS policy for UI application access
+- [ ] T049 [US6] Create service registry endpoint in APIM returning all service metadata (name, version, health, OpenAPI URL)
+- [ ] T050 [US6] Document APIM gateway URL and authentication flow in `docs/api-gateway.md`
+
+**Checkpoint**: Service discovery works - Developers can find services and view API documentation. MVP Core Ready (US1 + US6)
+
+---
+
+## Phase 5: User Story 2 - Event Management (Priority: P1)
+
+**Goal**: Committee members can create and manage events; all users can view upcoming and past events
+
+**Independent Test**: Create events, publish them, query as different user roles. Only depends on User Management (US1) for authentication.
+
+### Implementation for User Story 2
+
+- [ ] T051 Create Events service project structure: `services/events/src/VillageClub.Events/VillageClub.Events.csproj`
+- [ ] T052 Add EF Core packages, Azure Functions SDK, reference to VillageClub.Contracts
+- [ ] T053 [P] [US2] Create Event entity `services/events/src/VillageClub.Events/Data/Entities/Event.cs` with all fields from data-model.md
+- [ ] T054 [P] [US2] Create EventType enum (SpecialEvent, RegularBarNight, PrivateHire, Fundraiser) in `services/events/src/VillageClub.Events/Models/`
+- [ ] T055 [US2] Create EventsDbContext `services/events/src/VillageClub.Events/Data/EventsDbContext.cs` with Events schema configuration
+- [ ] T056 [US2] Configure Event entity indexes (IX_Events_StartDateTime, IX_Events_EventType, IX_Events_Status)
+- [ ] T057 [US2] Generate and apply EF Core migrations for Events schema using `dotnet ef migrations add InitialEventsSchema`
+- [ ] T058 [P] [US2] Create EventDto, CreateEventRequest, UpdateEventRequest models in `services/events/src/VillageClub.Events/Models/`
+- [ ] T059 [P] [US2] Create FluentValidation validators for CreateEventRequest (title length, date validation, duration checks)
+- [ ] T060 [US2] Implement EventService in `services/events/src/VillageClub.Events/Services/EventService.cs` (CRUD, state transitions Draft→Published→Completed)
+- [ ] T061 [US2] Create EventFunctions in `services/events/src/VillageClub.Events/Functions/EventFunctions.cs` (POST/PUT/DELETE /api/v1/events)
+- [ ] T062 [US2] Create EventQueryFunctions in `services/events/src/VillageClub.Events/Functions/EventQueryFunctions.cs` (GET /api/v1/events with filtering, GET /api/v1/events/{id})
+- [ ] T063 [US2] Add JWT validation and role-based authorization (Committee only for create/update/delete)
+- [ ] T064 [US2] Configure DI and logging in `services/events/src/VillageClub.Events/Program.cs`
+- [ ] T065 [US2] Create `services/events/host.json`, `local.settings.json`, health check endpoint
+- [ ] T066 [US2] Add Swagger/OpenAPI generation for Events service
+- [ ] T067 [US2] Create `services/events/Dockerfile` for deployment
+- [ ] T068 [US2] Update `infrastructure/main.bicep` to deploy Events function app
+- [ ] T069 [US2] Add Events service to APIM backend definitions and service registry
+
+**Checkpoint**: User Story 2 complete - Events can be created and viewed. Works independently with US1 authentication.
+
+---
+
+## Phase 6: User Story 5 - Expense Management and Reimbursement (Priority: P2)
+
+**Goal**: Committee members and volunteers can submit expense claims with receipt uploads linked to events; treasurers can approve/reject/reimburse
+
+**Independent Test**: Submit expenses with receipts, link to events (US2), approve/reject as treasurer. Depends on US1 (auth) and US2 (events exist).
+
+### Implementation for User Story 5
+
+- [ ] T070 Create Finance service project structure: `services/finance/src/VillageClub.Finance/VillageClub.Finance.csproj`
+- [ ] T071 Add EF Core, Azure Functions SDK, Azure.Storage.Blobs, reference to VillageClub.Contracts
+- [ ] T072 [P] [US5] Create Expense entity `services/finance/src/VillageClub.Finance/Data/Entities/Expense.cs` with all fields from data-model.md
+- [ ] T073 [P] [US5] Create Receipt entity `services/finance/src/VillageClub.Finance/Data/Entities/Receipt.cs`
+- [ ] T074 [P] [US5] Create ExpenseStatus enum (PendingReview, Approved, Rejected, Reimbursed) in `services/finance/src/VillageClub.Finance/Models/`
+- [ ] T075 [US5] Create FinanceDbContext `services/finance/src/VillageClub.Finance/Data/FinanceDbContext.cs` with Finance schema configuration
+- [ ] T076 [US5] Configure Expense entity indexes (IX_Expenses_EventId, IX_Expenses_Status, IX_Expenses_SubmittedById)
+- [ ] T077 [US5] Generate and apply EF Core migrations for Finance schema using `dotnet ef migrations add InitialFinanceSchema`
+- [ ] T078 [P] [US5] Create ExpenseDto, CreateExpenseRequest, ExpenseSummaryDto models in `services/finance/src/VillageClub.Finance/Models/`
+- [ ] T079 [P] [US5] Create FluentValidation validators for CreateExpenseRequest (amount >0, eventId required, receipt validation)
+- [ ] T080 [US5] Implement BlobStorageService in `services/finance/src/VillageClub.Finance/Services/BlobStorageService.cs` (upload, generate SAS token, validate file type via magic bytes)
+- [ ] T081 [US5] Implement EventValidationService in `services/finance/src/VillageClub.Finance/Services/EventValidationService.cs` (HTTP client to call Events service, validate event exists, circuit breaker with Polly)
+- [ ] T082 [US5] Implement ExpenseService in `services/finance/src/VillageClub.Finance/Services/ExpenseService.cs` (submit, approve, reject, reimburse, calculate totals per event)
+- [ ] T083 [US5] Create ExpenseFunctions in `services/finance/src/VillageClub.Finance/Functions/ExpenseFunctions.cs` (POST /api/v1/expenses with multipart receipt upload)
+- [ ] T084 [US5] Create ExpenseReviewFunctions in `services/finance/src/VillageClub.Finance/Functions/ExpenseReviewFunctions.cs` (PUT /api/v1/expenses/{id}/approve, /reject, /reimburse)
+- [ ] T085 [US5] Create ExpenseQueryFunctions in `services/finance/src/VillageClub.Finance/Functions/ExpenseQueryFunctions.cs` (GET /api/v1/expenses, GET /api/v1/expenses/{id}/receipt returns SAS URL)
+- [ ] T086 [US5] Add JWT validation and role-based authorization (Treasurer role for approve/reject/reimburse)
+- [ ] T087 [US5] Configure DI, logging, and Azure Blob Storage client with managed identity in Program.cs
+- [ ] T088 [US5] Create `services/finance/host.json`, `local.settings.json`, health check endpoint
+- [ ] T089 [US5] Add Swagger/OpenAPI generation for Finance service
+- [ ] T090 [US5] Create `services/finance/Dockerfile` for deployment
+- [ ] T091 [US5] Update `infrastructure/main.bicep` to deploy Finance function app with Blob Storage connection
+- [ ] T092 [US5] Add Finance service to APIM backend definitions and service registry
+
+**Checkpoint**: User Story 5 complete - Expenses can be submitted with receipts, approved, and reimbursed. Integrates with US1 (auth) and US2 (event validation).
+
+---
+
+## Phase 7: User Story 3 - Shift Management for Bar Volunteers (Priority: P2)
+
+**Goal**: Committee members create shifts for bar hours and events; volunteers sign up for shifts; committee members track assignments
+
+**Independent Test**: Create shifts (linked to events from US2), volunteers sign up, validate no overlapping shifts. Depends on US1 (auth) and US2 (events).
+
+### Implementation for User Story 3
+
+- [ ] T093 Create Scheduling service project structure: `services/scheduling/src/VillageClub.Scheduling/VillageClub.Scheduling.csproj`
+- [ ] T094 Add EF Core packages, Azure Functions SDK, reference to VillageClub.Contracts
+- [ ] T095 [P] [US3] Create Shift entity `services/scheduling/src/VillageClub.Scheduling/Data/Entities/Shift.cs` with all fields from data-model.md
+- [ ] T096 [P] [US3] Create ShiftAssignment entity `services/scheduling/src/VillageClub.Scheduling/Data/Entities/ShiftAssignment.cs`
+- [ ] T097 [P] [US3] Create ShiftType enum (BarShift, EventShift) and ShiftStatus enum in `services/scheduling/src/VillageClub.Scheduling/Models/`
+- [ ] T098 [US3] Create SchedulingDbContext `services/scheduling/src/VillageClub.Scheduling/Data/SchedulingDbContext.cs` with Scheduling schema configuration
+- [ ] T099 [US3] Configure Shift entity indexes (IX_Shifts_StartDateTime, IX_Shifts_EventId, IX_Shifts_Status)
+- [ ] T100 [US3] Generate and apply EF Core migrations for Scheduling schema using `dotnet ef migrations add InitialSchedulingSchema`
+- [ ] T101 [P] [US3] Create ShiftDto, CreateShiftRequest, ShiftAssignmentDto models in `services/scheduling/src/VillageClub.Scheduling/Models/`
+- [ ] T102 [P] [US3] Create FluentValidation validators for CreateShiftRequest (date validation, capacity >0, event validation if EventShift)
+- [ ] T103 [US3] Implement EventValidationService in `services/scheduling/src/VillageClub.Scheduling/Services/EventValidationService.cs` (HTTP client to Events service with Polly circuit breaker)
+- [ ] T104 [US3] Implement ShiftService in `services/scheduling/src/VillageClub.Scheduling/Services/ShiftService.cs` (CRUD shifts, auto-update status to Filled when capacity reached)
+- [ ] T105 [US3] Implement ShiftAssignmentService in `services/scheduling/src/VillageClub.Scheduling/Services/ShiftAssignmentService.cs` (assign volunteer, validate no overlapping shifts, cancel assignment)
+- [ ] T106 [US3] Create ShiftFunctions in `services/scheduling/src/VillageClub.Scheduling/Functions/ShiftFunctions.cs` (POST/PUT/DELETE /api/v1/shifts)
+- [ ] T107 [US3] Create ShiftAssignmentFunctions in `services/scheduling/src/VillageClub.Scheduling/Functions/ShiftAssignmentFunctions.cs` (POST/DELETE /api/v1/shifts/{id}/assignments, GET /api/v1/shifts/my-assignments)
+- [ ] T108 [US3] Add JWT validation and role-based authorization (Committee for create/update/delete shifts, Volunteer for sign up)
+- [ ] T109 [US3] Configure DI and logging in `services/scheduling/src/VillageClub.Scheduling/Program.cs`
+- [ ] T110 [US3] Create `services/scheduling/host.json`, `local.settings.json`, health check endpoint
+- [ ] T111 [US3] Add Swagger/OpenAPI generation for Scheduling service
+- [ ] T112 [US3] Create `services/scheduling/Dockerfile` for deployment
+- [ ] T113 [US3] Update `infrastructure/main.bicep` to deploy Scheduling function app
+- [ ] T114 [US3] Add Scheduling service to APIM backend definitions and service registry
+
+**Checkpoint**: User Story 3 complete - Shifts can be created and volunteers can sign up. Integrates with US1 (auth) and US2 (event validation).
+
+---
+
+## Phase 8: User Story 4 - Stock Alert Management (Priority: P3)
+
+**Goal**: Volunteers can report low stock items; committee members and bar managers can view and resolve alerts
+
+**Independent Test**: Volunteers create stock alerts, committee members view and resolve them. Only depends on US1 for authentication - simplest story.
+
+### Implementation for User Story 4
+
+- [ ] T115 Create Bar service project structure: `services/bar/src/VillageClub.Bar/VillageClub.Bar.csproj`
+- [ ] T116 Add EF Core packages, Azure Functions SDK, reference to VillageClub.Contracts
+- [ ] T117 [P] [US4] Create StockAlert entity `services/bar/src/VillageClub.Bar/Data/Entities/StockAlert.cs` with all fields from data-model.md
+- [ ] T118 [P] [US4] Create StockUrgency enum (Low, Medium, High) and StockAlertStatus enum in `services/bar/src/VillageClub.Bar/Models/`
+- [ ] T119 [US4] Create BarDbContext `services/bar/src/VillageClub.Bar/Data/BarDbContext.cs` with Bar schema configuration
+- [ ] T120 [US4] Configure StockAlert entity indexes (IX_StockAlerts_ItemName, IX_StockAlerts_Status, IX_StockAlerts_ReportedAt)
+- [ ] T121 [US4] Generate and apply EF Core migrations for Bar schema using `dotnet ef migrations add InitialBarSchema`
+- [ ] T122 [P] [US4] Create StockAlertDto, CreateStockAlertRequest models in `services/bar/src/VillageClub.Bar/Models/`
+- [ ] T123 [P] [US4] Create FluentValidation validators for CreateStockAlertRequest (itemName required, urgency valid)
+- [ ] T124 [US4] Implement StockAlertService in `services/bar/src/VillageClub.Bar/Services/StockAlertService.cs` (create alert, list active alerts, resolve, group by item)
+- [ ] T125 [US4] Create StockAlertFunctions in `services/bar/src/VillageClub.Bar/Functions/StockAlertFunctions.cs` (GET/POST /api/v1/stock-alerts, PUT /api/v1/stock-alerts/{id}/resolve)
+- [ ] T126 [US4] Add JWT validation and role-based authorization (Volunteer can create, Committee can resolve)
+- [ ] T127 [US4] Configure DI and logging in `services/bar/src/VillageClub.Bar/Program.cs`
+- [ ] T128 [US4] Create `services/bar/host.json`, `local.settings.json`, health check endpoint
+- [ ] T129 [US4] Add Swagger/OpenAPI generation for Bar service
+- [ ] T130 [US4] Create `services/bar/Dockerfile` for deployment
+- [ ] T131 [US4] Update `infrastructure/main.bicep` to deploy Bar function app
+- [ ] T132 [US4] Add Bar service to APIM backend definitions and service registry
+
+**Checkpoint**: User Story 4 complete - Stock alerts work end-to-end. All user stories now implemented!
+
+---
+
+## Phase 9: Polish & Cross-Cutting Concerns
+
+**Purpose**: Production readiness improvements affecting multiple services
+
+- [ ] T133 [P] Add pre-warming timer trigger (Fri/Sat 7:45pm) to each service to mitigate cold starts
+- [ ] T134 [P] Configure Application Insights connection for all services in Bicep deployment
+- [ ] T135 Add correlation ID middleware to all services for distributed tracing across service calls
+- [ ] T136 [P] Create integration test project `tests/VillageClub.IntegrationTests/` using Azure Functions local runtime
+- [ ] T137 [P] Create contract test project `tests/VillageClub.ContractTests/` for inter-service API validation
+- [ ] T138 Add rate limiting policies in APIM to prevent abuse (100 requests/minute per user)
+- [ ] T139 Configure Azure SQL Database firewall rules and enable audit logging in Bicep
+- [ ] T140 [P] Create deployment pipeline `azure-pipelines.yml` for CI/CD (build, test, deploy to staging/production)
+- [ ] T141 [P] Document local development setup in `README.md` based on quickstart.md
+- [ ] T142 Add API versioning strategy documentation in `docs/api-versioning.md`
+- [ ] T143 Create runbook `docs/operations/incident-response.md` for 15-minute RTO scenarios
+- [ ] T144 Validate all quickstart.md scenarios work end-to-end with deployed services
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: No dependencies - can start immediately
+- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
+- **User Story 1 (Phase 3)**: Depends on Foundational - Must complete first (authentication required by all)
+- **User Story 6 (Phase 4)**: Depends on US1 - Service discovery needs at least one service (Membership)
+- **User Story 2 (Phase 5)**: Depends on US1 - Requires authentication
+- **User Story 5 (Phase 6)**: Depends on US1 + US2 - Expenses must link to events
+- **User Story 3 (Phase 7)**: Depends on US1 + US2 - Shifts can be linked to events
+- **User Story 4 (Phase 8)**: Depends on US1 only - Simplest integration
+- **Polish (Phase 9)**: Depends on all user stories being complete
+
+### User Story Dependencies
+
+- **User Story 1 (P1)**: Foundation - No dependencies on other stories
+- **User Story 6 (P1)**: Depends on US1 (needs a service to document)
+- **User Story 2 (P1)**: Depends on US1 (auth) - Can run in parallel with US6
+- **User Story 5 (P2)**: Depends on US1 + US2 (expenses link to events)
+- **User Story 3 (P2)**: Depends on US1 + US2 (shifts link to events) - Can run in parallel with US5
+- **User Story 4 (P3)**: Depends on US1 only - Can run after any P1 story completes
+
+### Within Each User Story
+
+- Models/Entities created in parallel before services
+- Services depend on models/entities
+- Functions/endpoints depend on services
+- Authorization/middleware after core implementation
+- Deployment after all service code complete
+
+### Parallel Opportunities
+
+- **Phase 1 (Setup)**: All tasks marked [P] can run in parallel (T002-T010)
+- **Phase 2 (Foundational)**: Tasks T012-T014 can run in parallel; T021-T023 can run in parallel
+- **Phase 3 (US1)**: Entities T021-T023 parallel; Models T026-T028 parallel; Auth+User functions T033-T034 parallel
+- **Phase 4 (US6)**: T041, T047-T048 can run in parallel
+- **Phase 5 (US2)**: Entity+Enum T053-T054 parallel; Models+Validators T058-T059 parallel
+- **Phase 6 (US5)**: Entities T072-T073 parallel; Models+Validators T078-T079 parallel
+- **Phase 7 (US3)**: Entities T095-T096 parallel; Models+Validators T101-T102 parallel
+- **Phase 8 (US4)**: Entity+Enums T117-T118 parallel; Models+Validators T122-T123 parallel
+- **Phase 9 (Polish)**: Most tasks marked [P] can run in parallel
+
+**Critical Path**: Setup → Foundational → US1 → US2 → US5 (if prioritizing expenses) OR US3 (if prioritizing shifts) → US4 → Polish
+
+---
+
+## Parallel Example: User Story 2 (Event Management)
+
+```bash
+# After Foundational phase completes, launch User Story 2 entity creation:
+Task T053: "Create Event entity" 
+Task T054: "Create EventType enum" 
+
+# Then launch models and validators together:
+Task T058: "Create EventDto, CreateEventRequest, UpdateEventRequest models"
+Task T059: "Create FluentValidation validators"
+
+# Multiple developers can work on different user stories after US1 completes:
+Developer A: User Story 2 (Events)
+Developer B: User Story 4 (Stock Alerts) - simpler, no event dependency
+```
+
+---
+
+## Implementation Strategy
+
+### MVP First (Minimum Viable Product)
+
+**Recommended MVP Scope**: User Stories 1, 6, and 2 only
+
+1. **Phase 1**: Setup (T001-T010) - 1-2 days
+2. **Phase 2**: Foundational (T011-T020) - 2-3 days
+3. **Phase 3**: User Story 1 - Authentication & User Management (T021-T040) - 5-7 days
+4. **Phase 4**: User Story 6 - Service Discovery (T041-T050) - 2-3 days
+5. **Phase 5**: User Story 2 - Event Management (T051-T069) - 4-5 days
+6. **STOP and VALIDATE**: MVP delivers user management, authentication, event creation/viewing, and API documentation
+7. **Deploy to staging**, demonstrate to stakeholders, gather feedback
+
+**MVP Value**: Establishes authentication foundation, enables event planning (core club activity), and provides API documentation for UI development to begin in parallel.
+
+### Incremental Delivery (Recommended Approach)
+
+1. **Foundation** (Setup + Foundational) → 3-5 days → Database and auth framework ready
+2. **MVP Release** (US1 + US6 + US2) → 12-15 days → Users, events, API docs → Deploy & Demo
+3. **Increment 2** (US5 OR US3) → 8-10 days → Add either expense management or shift scheduling → Deploy & Demo
+4. **Increment 3** (US3 OR US5) → 8-10 days → Add the other P2 story → Deploy & Demo
+5. **Increment 4** (US4) → 5-6 days → Stock alerts → Deploy & Demo
+6. **Polish** (Phase 9) → 3-5 days → Production hardening → Final Release
+
+**Total Estimate**: 40-55 days for complete implementation with all user stories
+
+### Parallel Team Strategy
+
+With **3 developers** after Foundational phase completes:
+
+- **Developer A**: User Story 1 (critical path) → Then User Story 5 (Expenses)
+- **Developer B**: Wait for US1, then User Story 6 (Service Discovery) → Then User Story 3 (Shifts)
+- **Developer C**: Wait for US1, then User Story 2 (Events) → Then User Story 4 (Stock Alerts)
+
+**Coordination points**:
+- All wait for Foundational (Phase 2) to complete
+- B & C wait for A to finish US1 (authentication)
+- US5 and US3 both wait for US2 (events) to complete
+- Regular sync on shared contracts library changes
+
+---
+
+## Notes
+
+- **[P] tasks** = different files, no dependencies, can run in parallel
+- **[Story] label** maps task to specific user story (US1-US6) for traceability
+- Each user story is independently completable and testable (except dependencies noted)
+- **No TDD approach** - tests are NOT required per feature specification
+- Commit after each task or logical group
+- Stop at any checkpoint to validate story independently before proceeding
+- **Cost optimization**: Serverless-first architecture scales to zero when idle
+- **Security**: JWT validation at API Gateway, role-based authorization per service
+- **Resilience**: Polly circuit breaker for inter-service HTTP calls
+- **Observability**: Structured logging to Application Insights, health checks for service discovery
+
+---
+
+## Critical Success Factors
+
+1. **Complete Foundational Phase 2 first** - Nothing else can work without authentication and database schemas
+2. **User Story 1 is the foundation** - All other stories depend on authentication/authorization
+3. **Event Management (US2) is a dependency** - US3 and US5 both need events to exist
+4. **Validate inter-service communication** - Test circuit breakers and error handling when services are down
+5. **Database schema isolation** - Ensure services never cross schema boundaries directly
+6. **API Gateway configuration** - APIM must validate JWT before routing to services
+7. **Receipt storage** - Test blob upload, SAS token generation, and file validation thoroughly
+8. **Cold start mitigation** - Pre-warming timers during operating hours are essential for UX
