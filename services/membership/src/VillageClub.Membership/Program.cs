@@ -3,16 +3,43 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog;
+using Serilog.Events;
 using VillageClub.Auth.Services;
 using VillageClub.Contracts.Auth;
 using VillageClub.Membership.Data;
+using VillageClub.Membership.Middleware;
 using VillageClub.Membership.Models;
 using VillageClub.Membership.Services;
 using VillageClub.Membership.Validators;
 
-var host = new HostBuilder()
-    .ConfigureFunctionsWorkerDefaults()
-    .ConfigureServices(services =>
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .Enrich.WithProcessId()
+    .Enrich.WithThreadId()
+    .Enrich.WithProperty("Application", "VillageClub.Membership")
+    .WriteTo.Console()
+    .WriteTo.ApplicationInsights(
+        Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING") ?? string.Empty,
+        TelemetryConverter.Traces)
+    .CreateLogger();
+
+try
+{
+    Log.Information("Starting Village Club Membership Service");
+
+    var host = new HostBuilder()
+        .ConfigureFunctionsWorkerDefaults(builder =>
+        {
+            // Register middleware in order: exception handling first, then authentication
+            builder.UseMiddleware<ExceptionHandlingMiddleware>();
+            builder.UseMiddleware<JwtAuthenticationMiddleware>();
+        })
+        .ConfigureServices(services =>
     {
         // Application Insights
         services.AddApplicationInsightsTelemetryWorkerService();
@@ -56,6 +83,17 @@ var host = new HostBuilder()
         services.AddScoped<IValidator<RefreshTokenRequest>, RefreshTokenRequestValidator>();
         services.AddScoped<IValidator<ChangePasswordRequest>, ChangePasswordRequestValidator>();
     })
+    .UseSerilog()
     .Build();
 
-host.Run();
+    host.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Village Club Membership Service terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}

@@ -16,15 +16,26 @@ param apimPublisherEmail string = 'admin@coatesvillageclub.org'
 @description('API Management publisher name')
 param apimPublisherName string = 'Coates Village Club'
 
-var functionAppName = 'func-${serviceName}-${environmentName}'
+@description('JWT Issuer for token validation')
+param jwtIssuer string = 'https://villageclub.coates.local'
+
+@description('JWT Audience for token validation')
+param jwtAudience string = 'villageclub-api'
+
+@description('JWT Token expiry in minutes')
+param jwtAccessTokenExpiryMinutes int = 60
+
+@description('JWT Refresh token expiry in days')
+param jwtRefreshTokenExpiryDays int = 30
+
+var membershipFunctionAppName = 'func-${serviceName}-membership-${environmentName}'
 var appServicePlanName = 'asp-${serviceName}-${environmentName}'
 var appInsightsName = 'appi-${serviceName}-${environmentName}'
 var keyVaultName = 'kv-${take('${serviceName}${environmentName}', 21)}'
-var storageAccountName = take('st${serviceName}${environmentName}', 24)
+var storageAccountName = take('stfunc${serviceName}${environmentName}', 24)  // Minimum 8 chars with 'stfunc' prefix
 var sqlServerName = 'sql-${serviceName}-${environmentName}'
 var apimName = 'apim-${serviceName}-${environmentName}'
 var receiptsStorageName = take('streceipts${serviceName}${environmentName}', 24)
-
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
@@ -75,56 +86,63 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   }
 }
 
-resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
-  name: functionAppName
-  location: location
-  kind: 'functionapp'
-  identity: {
-    type: 'SystemAssigned'
-  }
-  properties: {
-    serverFarmId: appServicePlan.id
-    siteConfig: {
-      appSettings: [
-        {
-          name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(storageAccount.id, storageAccount.apiVersion).keys[0].value}'
-        }
-        {
-          name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(storageAccount.id, storageAccount.apiVersion).keys[0].value}'
-        }
-        {
-          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: appInsights.properties.InstrumentationKey
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: appInsights.properties.ConnectionString
-        }
-        {
-          name: 'FUNCTIONS_EXTENSION_VERSION'
-          value: '~4'
-        }
-        {
-          name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'dotnet-isolated'
-        }
-        {
-          name: 'KeyVaultName'
-          value: keyVault.name
-        }
-        {
-          name: 'ServiceSettings:ApplicationName'
-          value: 'VillageClubService'
-        }
-        {
-          name: 'ServiceSettings:EnvironmentName'
-          value: environmentName
-        }
-      ]
+// Membership Function App Module
+module membershipFunctionApp 'modules/function-app.bicep' = {
+  name: 'membershipFunctionApp'
+  params: {
+    functionAppName: membershipFunctionAppName
+    location: location
+    appServicePlanId: appServicePlan.id
+    storageAccountName: storageAccount.name
+    appInsightsConnectionString: appInsights.properties.ConnectionString
+    keyVaultName: keyVault.name
+    sqlServerFqdn: sqlDatabase.outputs.sqlServerFqdn
+    databaseName: sqlDatabase.outputs.databaseName
+    sqlAdminLogin: sqlAdminLogin
+    sqlAdminPassword: sqlAdminPassword
+    additionalAppSettings: [
+      {
+        name: 'JwtSettings__Issuer'
+        value: jwtIssuer
+      }
+      {
+        name: 'JwtSettings__Audience'
+        value: jwtAudience
+      }
+      {
+        name: 'JwtSettings__AccessTokenExpiryMinutes'
+        value: string(jwtAccessTokenExpiryMinutes)
+      }
+      {
+        name: 'JwtSettings__RefreshTokenExpiryDays'
+        value: string(jwtRefreshTokenExpiryDays)
+      }
+      {
+        name: 'ServiceSettings__ApplicationName'
+        value: 'VillageClub.Membership'
+      }
+      {
+        name: 'ServiceSettings__EnvironmentName'
+        value: environmentName
+      }
+      {
+        name: 'WEBSITE_RUN_FROM_PACKAGE'
+        value: '1'
+      }
+    ]
+    tags: {
+      Environment: environmentName
+      Service: serviceName
+      Component: 'Membership'
     }
   }
+}
+
+resource functionApp 'Microsoft.Web/sites@2022-03-01' existing = {
+  name: membershipFunctionAppName
+  dependsOn: [
+    membershipFunctionApp
+  ]
 }
 
 // SQL Database Module

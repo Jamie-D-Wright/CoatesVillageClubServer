@@ -81,6 +81,7 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task GetUsers_ShouldReturnPaginatedList_WhenUsersExist()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         await SeedTestUsers(15);
         var request = CreateHttpRequest("GET", null, new Dictionary<string, string>
         {
@@ -89,7 +90,7 @@ public class UserFunctionsTests : FunctionTestBase
         });
 
         // Act
-        var response = await _userFunctions.GetUsers(request);
+        var response = await _userFunctions.GetUsers(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -106,6 +107,7 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task GetUsers_ShouldReturnSecondPage_WhenPageNumberIsTwo()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         await SeedTestUsers(15);
         var request = CreateHttpRequest("GET", null, new Dictionary<string, string>
         {
@@ -114,7 +116,7 @@ public class UserFunctionsTests : FunctionTestBase
         });
 
         // Act
-        var response = await _userFunctions.GetUsers(request);
+        var response = await _userFunctions.GetUsers(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -129,11 +131,12 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task GetUsers_ShouldUseDefaultPageSize_WhenPageSizeNotSpecified()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         await SeedTestUsers(5);
         var request = CreateHttpRequest("GET");
 
         // Act
-        var response = await _userFunctions.GetUsers(request);
+        var response = await _userFunctions.GetUsers(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -146,10 +149,11 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task GetUsers_ShouldReturnEmptyList_WhenNoUsersExist()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var request = CreateHttpRequest("GET");
 
         // Act
-        var response = await _userFunctions.GetUsers(request);
+        var response = await _userFunctions.GetUsers(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -163,14 +167,15 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task GetUsers_ShouldUseDefaultPageSize_WhenLargerValueRequested()
     {
         // Arrange
-        await SeedTestUsers(150);
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
+        await SeedTestUsers(15);
         var request = CreateHttpRequest("GET", null, new Dictionary<string, string>
         {
             ["pageSize"] = "200",
         });
 
         // Act
-        var response = await _userFunctions.GetUsers(request);
+        var response = await _userFunctions.GetUsers(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -187,11 +192,12 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task GetUserById_ShouldReturnUser_WhenUserExists()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var user = await CreateTestUserInDb("test@example.com", "Test", "User");
         var request = CreateHttpRequest("GET");
 
         // Act
-        var response = await _userFunctions.GetUserById(request, user.Id.ToString());
+        var response = await _userFunctions.GetUserById(request, user.Id.ToString(), MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -207,11 +213,12 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task GetUserById_ShouldReturnNotFound_WhenUserDoesNotExist()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var nonExistentId = Guid.NewGuid();
         var request = CreateHttpRequest("GET");
 
         // Act
-        var response = await _userFunctions.GetUserById(request, nonExistentId.ToString());
+        var response = await _userFunctions.GetUserById(request, nonExistentId.ToString(), MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -224,10 +231,11 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task GetUserById_ShouldReturnBadRequest_WhenIdFormatIsInvalid()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var request = CreateHttpRequest("GET");
 
         // Act
-        var response = await _userFunctions.GetUserById(request, "invalid-id");
+        var response = await _userFunctions.GetUserById(request, "invalid-id", MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -244,16 +252,19 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task GetCurrentUser_ShouldReturnNotImplemented_WhenAuthenticationNotYetImplemented()
     {
         // Arrange
+        var user = await CreateTestUserInDb("current@example.com", "Current", "User");
+        SetupAuthContext(user.Id, "current@example.com", "Member");
         var request = CreateHttpRequest("GET");
 
         // Act
-        var response = await _userFunctions.GetCurrentUser(request);
+        var response = await _userFunctions.GetCurrentUser(request, MockFunctionContext.Object);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotImplemented);
-        var error = await ReadResponseBody<ErrorResponse>(response);
-        error.Should().NotBeNull();
-        error!.Message.Should().Be("Authentication not yet implemented");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await ReadResponseBody<UserDto>(response);
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(user.Id);
+        result.Email.Should().Be(user.Email);
     }
 
     #endregion
@@ -264,6 +275,7 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task CreateUser_ShouldReturnCreatedUser_WhenRequestIsValid()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var createRequest = new CreateUserRequest
         {
             Email = "newuser@example.com",
@@ -275,7 +287,7 @@ public class UserFunctionsTests : FunctionTestBase
         var request = CreateHttpRequest("POST", createRequest);
 
         // Act
-        var response = await _userFunctions.CreateUser(request);
+        var response = await _userFunctions.CreateUser(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -296,6 +308,7 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task CreateUser_ShouldReturnConflict_WhenEmailAlreadyExists()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var email = "existing@example.com";
         await CreateTestUserInDb(email, "Existing", "User");
 
@@ -310,7 +323,7 @@ public class UserFunctionsTests : FunctionTestBase
         var request = CreateHttpRequest("POST", createRequest);
 
         // Act
-        var response = await _userFunctions.CreateUser(request);
+        var response = await _userFunctions.CreateUser(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
@@ -323,6 +336,7 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task CreateUser_ShouldReturnBadRequest_WhenEmailIsInvalid()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var createRequest = new CreateUserRequest
         {
             Email = "invalid-email",
@@ -334,7 +348,7 @@ public class UserFunctionsTests : FunctionTestBase
         var request = CreateHttpRequest("POST", createRequest);
 
         // Act
-        var response = await _userFunctions.CreateUser(request);
+        var response = await _userFunctions.CreateUser(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -347,6 +361,7 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task CreateUser_ShouldReturnBadRequest_WhenPasswordIsWeak()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var createRequest = new CreateUserRequest
         {
             Email = "test@example.com",
@@ -358,7 +373,7 @@ public class UserFunctionsTests : FunctionTestBase
         var request = CreateHttpRequest("POST", createRequest);
 
         // Act
-        var response = await _userFunctions.CreateUser(request);
+        var response = await _userFunctions.CreateUser(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -375,6 +390,7 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task UpdateUser_ShouldReturnUpdatedUser_WhenRequestIsValid()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var user = await CreateTestUserInDb("original@example.com", "Original", "Name");
         var updateRequest = new UpdateUserRequest
         {
@@ -385,7 +401,7 @@ public class UserFunctionsTests : FunctionTestBase
         var request = CreateHttpRequest("PUT", updateRequest);
 
         // Act
-        var response = await _userFunctions.UpdateUser(request, user.Id.ToString());
+        var response = await _userFunctions.UpdateUser(request, user.Id.ToString(), MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -401,6 +417,7 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task UpdateUser_ShouldReturnNotFound_WhenUserDoesNotExist()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var nonExistentId = Guid.NewGuid();
         var updateRequest = new UpdateUserRequest
         {
@@ -410,7 +427,7 @@ public class UserFunctionsTests : FunctionTestBase
         var request = CreateHttpRequest("PUT", updateRequest);
 
         // Act
-        var response = await _userFunctions.UpdateUser(request, nonExistentId.ToString());
+        var response = await _userFunctions.UpdateUser(request, nonExistentId.ToString(), MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -423,6 +440,7 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task UpdateUser_ShouldReturnBadRequest_WhenIdFormatIsInvalid()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var updateRequest = new UpdateUserRequest
         {
             FirstName = "Updated",
@@ -431,7 +449,7 @@ public class UserFunctionsTests : FunctionTestBase
         var request = CreateHttpRequest("PUT", updateRequest);
 
         // Act
-        var response = await _userFunctions.UpdateUser(request, "invalid-id");
+        var response = await _userFunctions.UpdateUser(request, "invalid-id", MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -448,11 +466,12 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task DeleteUser_ShouldReturnNoContent_WhenUserExists()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var user = await CreateTestUserInDb("delete@example.com", "Delete", "User");
         var request = CreateHttpRequest("DELETE");
 
         // Act
-        var response = await _userFunctions.DeleteUser(request, user.Id.ToString());
+        var response = await _userFunctions.DeleteUser(request, user.Id.ToString(), MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -467,11 +486,12 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task DeleteUser_ShouldReturnNotFound_WhenUserDoesNotExist()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var nonExistentId = Guid.NewGuid();
         var request = CreateHttpRequest("DELETE");
 
         // Act
-        var response = await _userFunctions.DeleteUser(request, nonExistentId.ToString());
+        var response = await _userFunctions.DeleteUser(request, nonExistentId.ToString(), MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -484,10 +504,11 @@ public class UserFunctionsTests : FunctionTestBase
     public async Task DeleteUser_ShouldReturnBadRequest_WhenIdFormatIsInvalid()
     {
         // Arrange
+        SetupAuthContext(Guid.NewGuid(), "committee@example.com", "Committee", "Treasurer");
         var request = CreateHttpRequest("DELETE");
 
         // Act
-        var response = await _userFunctions.DeleteUser(request, "invalid-id");
+        var response = await _userFunctions.DeleteUser(request, "invalid-id", MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

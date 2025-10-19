@@ -5,6 +5,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using VillageClub.Contracts.Models;
+using VillageClub.Membership.Middleware;
 using VillageClub.Membership.Models;
 using VillageClub.Membership.Services;
 
@@ -43,13 +44,22 @@ public class UserFunctions
     /// Gets a paginated list of users.
     /// </summary>
     /// <param name="req">HTTP request.</param>
+    /// <param name="context">Function context.</param>
     /// <returns>Paginated user list.</returns>
     [Function("GetUsers")]
     public async Task<HttpResponseData> GetUsers(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users")] HttpRequestData req,
+        FunctionContext context)
     {
         try
         {
+            // Only Committee members can list all users
+            var authResponse = AuthorizationHelper.CheckCommitteeRole(context, req, _logger);
+            if (authResponse != null)
+            {
+                return authResponse;
+            }
+
             // Parse query parameters
             var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
             var pageNumber = int.TryParse(query["pageNumber"], out var pn) && pn > 0 ? pn : 1;
@@ -73,17 +83,26 @@ public class UserFunctions
     /// </summary>
     /// <param name="req">HTTP request.</param>
     /// <param name="id">User ID.</param>
+    /// <param name="context">Function context.</param>
     /// <returns>User details.</returns>
     [Function("GetUserById")]
     public async Task<HttpResponseData> GetUserById(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/{id}")] HttpRequestData req,
-        string id)
+        string id,
+        FunctionContext context)
     {
         try
         {
             if (!Guid.TryParse(id, out var userId))
             {
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid user ID format");
+            }
+
+            // Users can view their own profile, Committee can view anyone
+            var authResponse = AuthorizationHelper.CheckSelfOrCommittee(context, req, userId, _logger);
+            if (authResponse != null)
+            {
+                return authResponse;
             }
 
             var user = await _userService.GetByIdAsync(userId);
@@ -107,16 +126,31 @@ public class UserFunctions
     /// Gets the current authenticated user's profile.
     /// </summary>
     /// <param name="req">HTTP request.</param>
+    /// <param name="context">Function context.</param>
     /// <returns>Current user details.</returns>
     [Function("GetCurrentUser")]
     public async Task<HttpResponseData> GetCurrentUser(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/me")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/me")] HttpRequestData req,
+        FunctionContext context)
     {
         try
         {
-            // TODO: Extract user ID from JWT token once authentication middleware is implemented
-            // For now, return a placeholder error
-            return await CreateErrorResponse(req, HttpStatusCode.NotImplemented, "Authentication not yet implemented");
+            // Get user ID from authentication context
+            var userId = context.GetUserId();
+            if (userId == null)
+            {
+                return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "User not authenticated");
+            }
+
+            var user = await _userService.GetByIdAsync(userId.Value);
+            if (user == null)
+            {
+                return await CreateErrorResponse(req, HttpStatusCode.NotFound, "User not found");
+            }
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(user);
+            return response;
         }
         catch (Exception ex)
         {
@@ -129,13 +163,22 @@ public class UserFunctions
     /// Creates a new user.
     /// </summary>
     /// <param name="req">HTTP request.</param>
+    /// <param name="context">Function context.</param>
     /// <returns>Created user details.</returns>
     [Function("CreateUser")]
     public async Task<HttpResponseData> CreateUser(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "users")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "users")] HttpRequestData req,
+        FunctionContext context)
     {
         try
         {
+            // Only Committee members can create users
+            var authResponse = AuthorizationHelper.CheckCommitteeRole(context, req, _logger);
+            if (authResponse != null)
+            {
+                return authResponse;
+            }
+
             var createRequest = await JsonSerializer.DeserializeAsync<CreateUserRequest>(req.Body);
             if (createRequest == null)
             {
@@ -172,17 +215,26 @@ public class UserFunctions
     /// </summary>
     /// <param name="req">HTTP request.</param>
     /// <param name="id">User ID to update.</param>
+    /// <param name="context">Function context.</param>
     /// <returns>Updated user details.</returns>
     [Function("UpdateUser")]
     public async Task<HttpResponseData> UpdateUser(
         [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "users/{id}")] HttpRequestData req,
-        string id)
+        string id,
+        FunctionContext context)
     {
         try
         {
             if (!Guid.TryParse(id, out var userId))
             {
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid user ID format");
+            }
+
+            // Users can update their own profile, Committee can update anyone
+            var authResponse = AuthorizationHelper.CheckSelfOrCommittee(context, req, userId, _logger);
+            if (authResponse != null)
+            {
+                return authResponse;
             }
 
             var updateRequest = await JsonSerializer.DeserializeAsync<UpdateUserRequest>(req.Body);
@@ -219,17 +271,26 @@ public class UserFunctions
     /// </summary>
     /// <param name="req">HTTP request.</param>
     /// <param name="id">User ID to delete.</param>
+    /// <param name="context">Function context.</param>
     /// <returns>Success response.</returns>
     [Function("DeleteUser")]
     public async Task<HttpResponseData> DeleteUser(
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "users/{id}")] HttpRequestData req,
-        string id)
+        string id,
+        FunctionContext context)
     {
         try
         {
             if (!Guid.TryParse(id, out var userId))
             {
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid user ID format");
+            }
+
+            // Only Committee members can delete users
+            var authResponse = AuthorizationHelper.CheckCommitteeRole(context, req, _logger);
+            if (authResponse != null)
+            {
+                return authResponse;
             }
 
             var result = await _userService.DeleteAsync(userId);

@@ -124,6 +124,26 @@ public abstract class FunctionTestBase : IDisposable
         return await reader.ReadToEndAsync();
     }
 
+    /// <summary>
+    /// Sets up authentication context for testing.
+    /// </summary>
+    protected void SetupAuthContext(Guid userId, string email, string role, string? committeeRole = null)
+    {
+        var items = new Dictionary<object, object>
+        {
+            ["UserId"] = userId,
+            ["Email"] = email,
+            ["Role"] = role,
+        };
+
+        if (committeeRole != null)
+        {
+            items["CommitteeRole"] = committeeRole;
+        }
+
+        MockFunctionContext.Setup(ctx => ctx.Items).Returns(items);
+    }
+
     protected virtual void Dispose(bool disposing)
     {
         if (!_disposed && disposing && ServiceProvider is IDisposable disposable)
