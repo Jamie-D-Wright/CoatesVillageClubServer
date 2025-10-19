@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Extensions.OpenApi.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -39,6 +40,7 @@ try
             builder.UseMiddleware<ExceptionHandlingMiddleware>();
             builder.UseMiddleware<JwtAuthenticationMiddleware>();
         })
+        .ConfigureOpenApi()
         .ConfigureServices(services =>
     {
         // Application Insights

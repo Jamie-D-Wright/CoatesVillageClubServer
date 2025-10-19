@@ -3,7 +3,10 @@ using System.Text.Json;
 using FluentValidation;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using VillageClub.Contracts.Models;
 using VillageClub.Membership.Middleware;
 using VillageClub.Membership.Models;
@@ -47,6 +50,13 @@ public class UserFunctions
     /// <param name="context">Function context.</param>
     /// <returns>Paginated user list.</returns>
     [Function("GetUsers")]
+    [OpenApiOperation(operationId: "GetUsers", tags: new[] { "Users" }, Summary = "List all users", Description = "Retrieves a paginated list of all users. Committee members only.")]
+    [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
+    [OpenApiParameter(name: "pageNumber", In = ParameterLocation.Query, Required = false, Type = typeof(int), Description = "Page number (default: 1)")]
+    [OpenApiParameter(name: "pageSize", In = ParameterLocation.Query, Required = false, Type = typeof(int), Description = "Page size (default: 10, max: 100)")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(PagedResult<UserDto>), Description = "Paginated user list")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not authenticated")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Forbidden, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User does not have Committee role")]
     public async Task<HttpResponseData> GetUsers(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users")] HttpRequestData req,
         FunctionContext context)
@@ -86,6 +96,14 @@ public class UserFunctions
     /// <param name="context">Function context.</param>
     /// <returns>User details.</returns>
     [Function("GetUserById")]
+    [OpenApiOperation(operationId: "GetUserById", tags: new[] { "Users" }, Summary = "Get user by ID", Description = "Retrieves a specific user by ID. Users can view their own profile; Committee members can view any user.")]
+    [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "User ID (GUID)")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(UserDto), Description = "User found")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "Invalid user ID format")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not found")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not authenticated")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Forbidden, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User cannot access this profile")]
     public async Task<HttpResponseData> GetUserById(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/{id}")] HttpRequestData req,
         string id,
@@ -129,6 +147,11 @@ public class UserFunctions
     /// <param name="context">Function context.</param>
     /// <returns>Current user details.</returns>
     [Function("GetCurrentUser")]
+    [OpenApiOperation(operationId: "GetCurrentUser", tags: new[] { "Users" }, Summary = "Get current user profile", Description = "Retrieves the profile of the currently authenticated user.")]
+    [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(UserDto), Description = "Current user profile")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not authenticated")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not found")]
     public async Task<HttpResponseData> GetCurrentUser(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/me")] HttpRequestData req,
         FunctionContext context)
@@ -166,6 +189,14 @@ public class UserFunctions
     /// <param name="context">Function context.</param>
     /// <returns>Created user details.</returns>
     [Function("CreateUser")]
+    [OpenApiOperation(operationId: "CreateUser", tags: new[] { "Users" }, Summary = "Create new user", Description = "Creates a new user account. Committee members only.")]
+    [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(CreateUserRequest), Required = true, Description = "User creation details")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Created, contentType: "application/json", bodyType: typeof(UserDto), Description = "User created successfully")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "Invalid request")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not authenticated")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Forbidden, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User does not have Committee role")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Conflict, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User with this email already exists")]
     public async Task<HttpResponseData> CreateUser(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "users")] HttpRequestData req,
         FunctionContext context)
@@ -218,6 +249,15 @@ public class UserFunctions
     /// <param name="context">Function context.</param>
     /// <returns>Updated user details.</returns>
     [Function("UpdateUser")]
+    [OpenApiOperation(operationId: "UpdateUser", tags: new[] { "Users" }, Summary = "Update user", Description = "Updates an existing user. Users can update their own profile; Committee members can update any user.")]
+    [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "User ID (GUID)")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(UpdateUserRequest), Required = true, Description = "User update details")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(UserDto), Description = "User updated successfully")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "Invalid request")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not authenticated")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Forbidden, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User cannot update this profile")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not found")]
     public async Task<HttpResponseData> UpdateUser(
         [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "users/{id}")] HttpRequestData req,
         string id,
@@ -274,6 +314,14 @@ public class UserFunctions
     /// <param name="context">Function context.</param>
     /// <returns>Success response.</returns>
     [Function("DeleteUser")]
+    [OpenApiOperation(operationId: "DeleteUser", tags: new[] { "Users" }, Summary = "Delete user", Description = "Soft deletes a user by marking them as inactive. Committee members only.")]
+    [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
+    [OpenApiParameter(name: "id", In = ParameterLocation.Path, Required = true, Type = typeof(string), Description = "User ID (GUID)")]
+    [OpenApiResponseWithoutBody(statusCode: HttpStatusCode.NoContent, Description = "User deleted successfully")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "Invalid user ID format")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not authenticated")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Forbidden, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User does not have Committee role")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.NotFound, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not found")]
     public async Task<HttpResponseData> DeleteUser(
         [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "users/{id}")] HttpRequestData req,
         string id,

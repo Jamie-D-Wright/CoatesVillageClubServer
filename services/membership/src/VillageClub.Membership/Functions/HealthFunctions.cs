@@ -2,7 +2,10 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 
 namespace VillageClub.Membership.Functions;
 
@@ -28,6 +31,9 @@ public class HealthFunctions
     /// <param name="req">The HTTP request.</param>
     /// <returns>Health status response.</returns>
     [Function("Health")]
+    [OpenApiOperation(operationId: "GetHealth", tags: new[] { "Health" }, Summary = "Get service health status", Description = "Returns the health status of the Membership service including version and JWT public key information.")]
+    [OpenApiSecurity("bearer_auth", SecuritySchemeType.Http, Scheme = OpenApiSecuritySchemeType.Bearer, BearerFormat = "JWT")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object), Description = "Service is healthy")]
     public async Task<HttpResponseData> GetHealth(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "health")] HttpRequestData req)
     {

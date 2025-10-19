@@ -122,22 +122,22 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 
 ### Implementation for User Story 6
 
-- [ ] T041 [P] [US6] Install Swashbuckle.AspNetCore (or NSwag) in Membership service for OpenAPI generation (infrastructure tooling)
-- [ ] T042 [US6] Configure Swagger/OpenAPI generation in `services/membership/src/VillageClub.Membership/Program.cs` with JWT bearer auth (uses VillageClub.Auth library for security definitions)
-- [ ] T042A [US6] [TDD] Write tests for OpenAPI spec generation (verify all endpoints documented, schemas present, JWT security defined using Auth library)
-- [ ] T043 [US6] Add XML documentation comments to all Membership API endpoints and models (documentation, not business logic)
-- [ ] T044 [US6] Create OpenAPI spec `specs/001-create-a-series/contracts/openapi/membership-api.yaml` (auto-generated or manual)
-- [ ] T044A [US6] [TDD] Write tests to validate OpenAPI spec compliance (schema validation, required fields, response codes)
-- [ ] T045 [US6] Configure APIM policies in `infrastructure/modules/apim.bicep` for service discovery endpoint (infrastructure as code)
-- [ ] T046 [US6] Create APIM backend definitions for Membership service with health check integration (infrastructure orchestration)
+- [X] T041 [P] [US6] Install Swashbuckle.AspNetCore (or NSwag) in Membership service for OpenAPI generation (infrastructure tooling)
+- [X] T042 [US6] Configure Swagger/OpenAPI generation in `services/membership/src/VillageClub.Membership/Program.cs` with JWT bearer auth (uses VillageClub.Auth library for security definitions)
+- [X] T042A [US6] [TDD] Write tests for OpenAPI spec generation (verify all endpoints documented, schemas present, JWT security defined using Auth library)
+- [X] T043 [US6] Add XML documentation comments to all Membership API endpoints and models (documentation, not business logic)
+- [X] T044 [US6] Create OpenAPI spec `specs/001-create-a-series/contracts/openapi/membership-api.yaml` (auto-generated or manual)
+- [X] T044A [US6] [TDD] Write tests to validate OpenAPI spec compliance (schema validation, required fields, response codes)
+- [X] T045 [US6] Configure APIM policies in `infrastructure/modules/apim.bicep` for service discovery endpoint (infrastructure as code)
+- [X] T046 [US6] Create APIM backend definitions for Membership service with health check integration (infrastructure orchestration)
 - [ ] T046A [US6] [TDD] Write integration tests for APIM backend health check integration
-- [ ] T047 [P] [US6] Add APIM JWT validation policy using VillageClub.Auth library's public key format from Membership /health endpoint
+- [X] T047 [P] [US6] Add APIM JWT validation policy using VillageClub.Auth library's public key format from Membership /health endpoint
 - [ ] T047A [US6] [TDD] Write tests for APIM JWT validation (valid tokens pass using Auth library format, invalid/expired tokens rejected)
-- [ ] T048 [P] [US6] Configure APIM CORS policy for UI application access (infrastructure policy, correctly in APIM)
+- [X] T048 [P] [US6] Configure APIM CORS policy for UI application access (infrastructure policy, correctly in APIM) - Implemented in global policy
 - [ ] T048A [US6] [TDD] Write tests for CORS policy (allowed origins, methods, headers)
-- [ ] T049 [US6] Create service registry endpoint in APIM returning all service metadata (name, version, health, OpenAPI URL) - infrastructure orchestration
+- [X] T049 [US6] Create service registry endpoint in APIM returning all service metadata (name, version, health, OpenAPI URL) - infrastructure orchestration
 - [ ] T049A [US6] [TDD] Write tests for service registry endpoint (returns all services, correct metadata format)
-- [ ] T050 [US6] Document APIM gateway URL and authentication flow (using VillageClub.Auth library) in `docs/api-gateway.md`
+- [X] T050 [US6] Document APIM gateway URL and authentication flow (using VillageClub.Auth library) in `docs/api-gateway.md`
 
 **Checkpoint**: Service discovery works - Developers can find services and view API documentation. MVP Core Ready (US1 + US6)
 
