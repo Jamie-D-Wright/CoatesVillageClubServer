@@ -470,7 +470,7 @@ public class AuthFunctionsTests : FunctionTestBase
 
     #region ChangePassword Tests
 
-    [Fact(Skip = "ChangePassword requires JWT middleware to extract userId from token - currently uses Guid.Empty")]
+    [Fact]
     public async Task ChangePassword_ShouldReturnNoContent_WhenPasswordIsChanged()
     {
         // Arrange
@@ -496,9 +496,10 @@ public class AuthFunctionsTests : FunctionTestBase
         };
 
         var request = CreateHttpRequest("POST", changePasswordRequest);
+        SetupAuthContext(user.User.Id, email, "Member");
 
         // Act
-        var response = await _authFunctions.ChangePassword(request);
+        var response = await _authFunctions.ChangePassword(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -524,6 +525,7 @@ public class AuthFunctionsTests : FunctionTestBase
     public async Task ChangePassword_ShouldReturnBadRequest_WhenPasswordsDoNotMatch()
     {
         // Arrange
+        var userId = Guid.NewGuid();
         var changePasswordRequest = new ChangePasswordRequest
         {
             CurrentPassword = "OldPassword123!",
@@ -532,9 +534,10 @@ public class AuthFunctionsTests : FunctionTestBase
         };
 
         var request = CreateHttpRequest("POST", changePasswordRequest);
+        SetupAuthContext(userId, "user@example.com", "Member");
 
         // Act
-        var response = await _authFunctions.ChangePassword(request);
+        var response = await _authFunctions.ChangePassword(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -548,6 +551,7 @@ public class AuthFunctionsTests : FunctionTestBase
     public async Task ChangePassword_ShouldReturnBadRequest_WhenNewPasswordIsSameAsOld()
     {
         // Arrange
+        var userId = Guid.NewGuid();
         var password = "Password123!";
         var changePasswordRequest = new ChangePasswordRequest
         {
@@ -557,9 +561,10 @@ public class AuthFunctionsTests : FunctionTestBase
         };
 
         var request = CreateHttpRequest("POST", changePasswordRequest);
+        SetupAuthContext(userId, "user@example.com", "Member");
 
         // Act
-        var response = await _authFunctions.ChangePassword(request);
+        var response = await _authFunctions.ChangePassword(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -579,6 +584,7 @@ public class AuthFunctionsTests : FunctionTestBase
         string confirmPassword)
     {
         // Arrange
+        var userId = Guid.NewGuid();
         var changePasswordRequest = new ChangePasswordRequest
         {
             CurrentPassword = currentPassword,
@@ -587,9 +593,10 @@ public class AuthFunctionsTests : FunctionTestBase
         };
 
         var request = CreateHttpRequest("POST", changePasswordRequest);
+        SetupAuthContext(userId, "user@example.com", "Member");
 
         // Act
-        var response = await _authFunctions.ChangePassword(request);
+        var response = await _authFunctions.ChangePassword(request, MockFunctionContext.Object);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

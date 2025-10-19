@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using VillageClub.Contracts.Auth;
 using VillageClub.Contracts.Models;
+using VillageClub.Membership.Middleware;
 using VillageClub.Membership.Models;
 using VillageClub.Membership.Services;
 
@@ -222,6 +223,7 @@ public class AuthFunctions
     /// Changes the password for the authenticated user.
     /// </summary>
     /// <param name="req">The HTTP request containing the current and new passwords.</param>
+    /// <param name="context">Function context containing authenticated user information.</param>
     /// <returns>No content response on success.</returns>
     [Function("ChangePassword")]
     [OpenApiOperation(operationId: "ChangePassword", tags: new[] { "Authentication" }, Summary = "Change password", Description = "Changes the password for the currently authenticated user.")]
@@ -231,12 +233,17 @@ public class AuthFunctions
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "Invalid request or incorrect current password")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.Unauthorized, contentType: "application/json", bodyType: typeof(ErrorResponse), Description = "User not authenticated")]
     public async Task<HttpResponseData> ChangePassword(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/change-password")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/change-password")] HttpRequestData req,
+        FunctionContext context)
     {
         try
         {
-            // TODO: Get userId from JWT token claims after implementing JWT middleware
-            var userId = Guid.Empty; // Placeholder until JWT middleware is implemented
+            // Get user ID from authentication context (set by JWT middleware)
+            var userId = context.GetUserId();
+            if (userId == null)
+            {
+                return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "User not authenticated");
+            }
 
             var changePasswordRequest = await JsonSerializer.DeserializeAsync<ChangePasswordRequest>(req.Body);
             if (changePasswordRequest == null)
@@ -250,7 +257,7 @@ public class AuthFunctions
                 return await CreateValidationErrorResponse(req, validationResult.Errors.Select(e => e.ErrorMessage).ToArray());
             }
 
-            var success = await _authService.ChangePasswordAsync(userId, changePasswordRequest);
+            var success = await _authService.ChangePasswordAsync(userId.Value, changePasswordRequest);
 
             if (!success)
             {
