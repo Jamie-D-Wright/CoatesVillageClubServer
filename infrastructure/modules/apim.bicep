@@ -141,8 +141,6 @@ resource serviceDiscoveryApi 'Microsoft.ApiManagement/service/apis@2023-05-01-pr
       'https'
     ]
     subscriptionRequired: false
-    apiVersion: 'v1'
-    apiVersionSetId: null
     isCurrent: true
   }
 }
@@ -187,7 +185,6 @@ resource serviceListPolicy 'Microsoft.ApiManagement/service/apis/operations/poli
       <set-body>@{
         var services = new JArray();
         
-        // Membership Service
         var membership = new JObject();
         membership["name"] = "Membership";
         membership["version"] = "v1";

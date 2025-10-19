@@ -143,11 +143,40 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 
 ---
 
+## Phase 4.5: Azure Infrastructure Deployment 🚀
+
+**Purpose**: Deploy MVP infrastructure (US1 + US6) to Azure and validate in cloud environment
+
+**Goal**: All Phase 3 and Phase 4 components running in Azure with monitoring and observability
+
+- [X] D001 Create deployment script `infrastructure/deploy.ps1` with interactive prompts and validation
+- [X] D002 [P] Create cleanup script `infrastructure/cleanup.ps1` with safety checks for production
+- [X] D003 [P] Create comprehensive infrastructure documentation `infrastructure/README.md`
+- [X] D004 [P] Create quick reference guide `infrastructure/QUICKSTART.md`
+- [X] D005 Update `infrastructure/main.bicep` with outputs for deployment information
+- [ ] D006 Run deployment script: `.\deploy.ps1 -Environment dev -Location uksouth` (~10-15 minutes)
+- [ ] D007 Deploy Membership service code: `func azure functionapp publish func-villageclub-membership-dev` (~2-3 minutes)
+- [ ] D008 Initialize database with EF migrations: `dotnet ef database update` (~1-2 minutes)
+- [ ] D009 Update APIM backend with deployed Function App URL
+- [ ] D010 Verify health endpoint: Test `/api/v1/health` via Function App and APIM
+- [ ] D011 Verify authentication: Register user, login, verify JWT token
+- [ ] D012 Verify service discovery: Test `/registry/v1/services` endpoint
+- [ ] D013 Run deferred integration tests: T046A, T047A, T048A, T049A (require Azure deployment)
+- [ ] D014 Configure Application Insights alerts and dashboards
+- [ ] D015 Document deployed URLs and share with team
+
+**Checkpoint**: MVP deployed to Azure - All US1 + US6 features running in cloud, ready for Phase 5 or UI development
+
+**Note**: Integration tests T046A-T049A were deferred during Phase 4 because they require Azure deployment. Run these tests after D010 completes.
+
+---
+
 ## Phase 5: User Story 2 - Event Management (Priority: P1)
 
 **Goal**: Committee members can create and manage events; all users can view upcoming and past events
 
 **Independent Test**: Create events, publish them, query as different user roles. Only depends on User Management (US1) for authentication.
+
 
 **⚠️ Library-First Approach**: Create `libs/VillageClub.Events.Core/` library FIRST with pure business logic, then Events service to orchestrate library + infrastructure
 

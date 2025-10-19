@@ -1,6 +1,6 @@
 param location string = resourceGroup().location
 param environmentName string
-param serviceName string = 'villageclub'
+param serviceName string = 'coatesvillageclub'
 
 @secure()
 @description('SQL Server administrator login')
@@ -11,16 +11,16 @@ param sqlAdminLogin string
 param sqlAdminPassword string
 
 @description('API Management publisher email')
-param apimPublisherEmail string = 'admin@coatesvillageclub.org'
+param apimPublisherEmail string = 'wright.jamied@gmail.com'
 
 @description('API Management publisher name')
 param apimPublisherName string = 'Coates Village Club'
 
 @description('JWT Issuer for token validation')
-param jwtIssuer string = 'https://villageclub.coates.local'
+param jwtIssuer string = 'https://coatesvillageclub.dev'
 
 @description('JWT Audience for token validation')
-param jwtAudience string = 'villageclub-api'
+param jwtAudience string = 'coatesvillageclub-api'
 
 @description('JWT Token expiry in minutes')
 param jwtAccessTokenExpiryMinutes int = 60
@@ -28,17 +28,26 @@ param jwtAccessTokenExpiryMinutes int = 60
 @description('JWT Refresh token expiry in days')
 param jwtRefreshTokenExpiryDays int = 30
 
-var membershipFunctionAppName = 'func-${serviceName}-membership-${environmentName}'
-var appServicePlanName = 'asp-${serviceName}-${environmentName}'
-var appInsightsName = 'appi-${serviceName}-${environmentName}'
-var keyVaultName = 'kv-${take('${serviceName}${environmentName}', 21)}'
-var storageAccountName = take('stfunc${serviceName}${environmentName}', 24)  // Minimum 8 chars with 'stfunc' prefix
-var sqlServerName = 'sql-${serviceName}-${environmentName}'
-var apimName = 'apim-${serviceName}-${environmentName}'
-var receiptsStorageName = take('streceipts${serviceName}${environmentName}', 24)
+// Naming Convention: Simplified - service name removed as redundant
+// Format: {type}-{component?}-{environment}
+// Storage accounts: st{component}{env} (no hyphens, max 24 chars, lowercase only)
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
-  name: storageAccountName
+var membershipFunctionAppName = 'func-membership-${environmentName}'
+var appServicePlanName = 'plan-${environmentName}'
+var appInsightsName = 'insights-${environmentName}'
+var keyVaultName = 'vault-${environmentName}'  // vault-dev (max 24)
+var functionStorageAccountName = 'stfunc${toLower(environmentName)}'  // stfuncdev (9 chars)
+var membershipStorageAccountName = 'stmembership${toLower(environmentName)}'  // stmembershipdev (15 chars)
+var eventsStorageAccountName = 'stevents${toLower(environmentName)}'    // steventsdev (11 chars)
+var shiftsStorageAccountName = 'stshifts${toLower(environmentName)}'    // stshiftsdev (11 chars)
+var stockStorageAccountName = 'ststock${toLower(environmentName)}'     // ststockdev (10 chars)
+var financeStorageAccountName = 'stfinance${toLower(environmentName)}'   // stfinancedev (12 chars)
+var sqlServerName = 'sqlserver-${environmentName}'
+var apimName = 'apim-${environmentName}'
+
+// Storage account for Azure Functions runtime
+resource functionStorageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
+  name: functionStorageAccountName
   location: location
   sku: {
     name: 'Standard_LRS'
@@ -93,7 +102,7 @@ module membershipFunctionApp 'modules/function-app.bicep' = {
     functionAppName: membershipFunctionAppName
     location: location
     appServicePlanId: appServicePlan.id
-    storageAccountName: storageAccount.name
+    storageAccountName: functionStorageAccount.name
     appInsightsConnectionString: appInsights.properties.ConnectionString
     keyVaultName: keyVault.name
     sqlServerFqdn: sqlDatabase.outputs.sqlServerFqdn
@@ -156,7 +165,7 @@ module sqlDatabase 'modules/sql-database.bicep' = {
     databaseName: 'VillageClubDB'
     enableServerless: true
     minCapacity: '0.5'
-    maxCapacity: '2'
+    maxCapacity: '1'  // Reduced from 2 to stay within vCore quota
     autoPauseDelay: 60
     tags: {
       Environment: environmentName
@@ -165,19 +174,109 @@ module sqlDatabase 'modules/sql-database.bicep' = {
   }
 }
 
-// Blob Storage Module for Receipts
-module receiptsStorage 'modules/blob-storage.bicep' = {
-  name: 'receiptsStorage'
+// Membership Service Storage - Currently no storage requirements identified
+module membershipStorage 'modules/blob-storage.bicep' = {
+  name: 'membershipStorage'
   params: {
-    storageAccountName: receiptsStorageName
+    storageAccountName: membershipStorageAccountName
     location: location
     storageAccountSku: 'Standard_LRS'
-    receiptsContainerName: 'receipts'
+    containerNames: [
+      'documents'     // Future use: member documents, certificates, etc.
+    ]
     coolTierTransitionDays: 90
+    deleteAfterDays: 2555  // 7 years retention
     tags: {
       Environment: environmentName
       Service: serviceName
-      Purpose: 'Receipts'
+      Purpose: 'Membership Service Storage'
+    }
+  }
+}
+
+// Events Service Storage - For event-related documents and media
+module eventsStorage 'modules/blob-storage.bicep' = {
+  name: 'eventsStorage'
+  params: {
+    storageAccountName: eventsStorageAccountName
+    location: location
+    storageAccountSku: 'Standard_LRS'
+    containerNames: [
+      'posters'       // Event promotional materials
+      'documents'     // Event planning documents
+      'photos'        // Event photos for history/gallery
+    ]
+    coolTierTransitionDays: 90
+    deleteAfterDays: 2555  // 7 years retention
+    tags: {
+      Environment: environmentName
+      Service: serviceName
+      Purpose: 'Events Service Storage'
+    }
+  }
+}
+
+// Shifts Service Storage - For shift-related documents
+module shiftsStorage 'modules/blob-storage.bicep' = {
+  name: 'shiftsStorage'
+  params: {
+    storageAccountName: shiftsStorageAccountName
+    location: location
+    storageAccountSku: 'Standard_LRS'
+    containerNames: [
+      'schedules'     // Shift schedules and rotas
+      'reports'       // Shift reports and logs
+    ]
+    coolTierTransitionDays: 90
+    deleteAfterDays: 2555  // 7 years retention
+    tags: {
+      Environment: environmentName
+      Service: serviceName
+      Purpose: 'Shifts Service Storage'
+    }
+  }
+}
+
+// Stock Service Storage - For stock-related data
+module stockStorage 'modules/blob-storage.bicep' = {
+  name: 'stockStorage'
+  params: {
+    storageAccountName: stockStorageAccountName
+    location: location
+    storageAccountSku: 'Standard_LRS'
+    containerNames: [
+      'reports'       // Stock reports and analytics
+      'exports'       // Data exports
+    ]
+    coolTierTransitionDays: 90
+    deleteAfterDays: 2555  // 7 years retention
+    tags: {
+      Environment: environmentName
+      Service: serviceName
+      Purpose: 'Stock Service Storage'
+    }
+  }
+}
+
+// Finance Service Storage - For receipts and financial documents
+module financeStorage 'modules/blob-storage.bicep' = {
+  name: 'financeStorage'
+  params: {
+    storageAccountName: financeStorageAccountName
+    location: location
+    storageAccountSku: 'Standard_LRS'
+    containerNames: [
+      'receipts'      // Expense receipts (REQUIRED by FR-029)
+      'invoices'      // Club invoices
+      'statements'    // Financial statements
+      'reports'       // Financial reports and audits
+    ]
+    coolTierTransitionDays: 90
+    deleteAfterDays: 2555  // 7 years retention for financial records
+    tags: {
+      Environment: environmentName
+      Service: serviceName
+      Purpose: 'Finance Service Storage'
     }
   }
 }
@@ -217,3 +316,27 @@ resource keyVaultAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2022-07-
     ]
   }
 }
+
+// Outputs
+output membershipFunctionAppName string = membershipFunctionAppName
+output membershipFunctionAppUrl string = 'https://${functionApp.properties.defaultHostName}'
+output sqlServerFqdn string = sqlDatabase.outputs.sqlServerFqdn
+output databaseName string = sqlDatabase.outputs.databaseName
+output apimGatewayUrl string = apiManagement.outputs.apimGatewayUrl
+output apimName string = apiManagement.outputs.apimName
+output serviceRegistryUrl string = apiManagement.outputs.serviceRegistryUrl
+output keyVaultName string = keyVault.name
+output keyVaultUri string = keyVault.properties.vaultUri
+output functionStorageAccountName string = functionStorageAccount.name
+output membershipStorageAccountName string = membershipStorage.outputs.storageAccountName
+output membershipStorageAccountId string = membershipStorage.outputs.storageAccountId
+output eventsStorageAccountName string = eventsStorage.outputs.storageAccountName
+output eventsStorageAccountId string = eventsStorage.outputs.storageAccountId
+output shiftsStorageAccountName string = shiftsStorage.outputs.storageAccountName
+output shiftsStorageAccountId string = shiftsStorage.outputs.storageAccountId
+output stockStorageAccountName string = stockStorage.outputs.storageAccountName
+output stockStorageAccountId string = stockStorage.outputs.storageAccountId
+output financeStorageAccountName string = financeStorage.outputs.storageAccountName
+output financeStorageAccountId string = financeStorage.outputs.storageAccountId
+output appInsightsConnectionString string = appInsights.properties.ConnectionString
+output resourceGroupName string = resourceGroup().name

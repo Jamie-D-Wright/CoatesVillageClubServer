@@ -1,4 +1,4 @@
-@description('Storage Account Name for receipts')
+@description('Storage Account Name')
 param storageAccountName string
 
 @description('Location for the storage account')
@@ -14,16 +14,23 @@ param location string = resourceGroup().location
 ])
 param storageAccountSku string = 'Standard_LRS'
 
-@description('Blob container name for receipts')
-param receiptsContainerName string = 'receipts'
+@description('Array of container names to create')
+param containerNames array = [
+  'receipts'
+  'documents'
+  'exports'
+]
 
 @description('Days before transitioning to Cool tier')
 param coolTierTransitionDays int = 90
 
+@description('Days before deleting old files (0 = no deletion)')
+param deleteAfterDays int = 2555  // 7 years default
+
 @description('Tags to apply to resources')
 param tags object = {}
 
-// Storage Account
+// General Purpose Storage Account for Coates Village Club
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
   location: location
@@ -48,16 +55,22 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
 resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
   parent: storageAccount
   name: 'default'
+  properties: {
+    deleteRetentionPolicy: {
+      enabled: true
+      days: 30
+    }
+  }
 }
 
-// Receipts Container
-resource receiptsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
+// Create containers dynamically
+resource containers 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = [for containerName in containerNames: {
   parent: blobService
-  name: receiptsContainerName
+  name: containerName
   properties: {
     publicAccess: 'None'
   }
-}
+}]
 
 // Lifecycle Management Policy
 resource lifecyclePolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2023-01-01' = {
@@ -76,14 +89,14 @@ resource lifecyclePolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2
                 tierToCool: {
                   daysAfterModificationGreaterThan: coolTierTransitionDays
                 }
+                delete: deleteAfterDays > 0 ? {
+                  daysAfterModificationGreaterThan: deleteAfterDays
+                } : null
               }
             }
             filters: {
               blobTypes: [
                 'blockBlob'
-              ]
-              prefixMatch: [
-                '${receiptsContainerName}/'
               ]
             }
           }
@@ -96,11 +109,11 @@ resource lifecyclePolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2
 @description('Storage Account Name')
 output storageAccountName string = storageAccount.name
 
-@description('Storage Account Primary Endpoint')
+@description('Storage Account Primary Blob Endpoint')
 output storageAccountPrimaryEndpoint string = storageAccount.properties.primaryEndpoints.blob
-
-@description('Receipts Container Name')
-output receiptsContainerName string = receiptsContainer.name
 
 @description('Storage Account Resource ID')
 output storageAccountId string = storageAccount.id
+
+@description('Container Names')
+output containerNames array = containerNames
