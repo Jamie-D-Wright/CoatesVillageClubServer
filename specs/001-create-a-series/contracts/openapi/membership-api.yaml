@@ -1,0 +1,595 @@
+openapi: 3.0.3
+info:
+  title: Membership Service API
+  description: User management, authentication, and authorization for Village Club
+  version: 1.0.0
+  contact:
+    name: Village Club Development Team
+
+servers:
+  - url: https://api-villageclub-prod.azure-api.net/membership/v1
+    description: Production (via API Management)
+  - url: https://api-villageclub-dev.azure-api.net/membership/v1
+    description: Development (via API Management)
+  - url: http://localhost:7071/api/v1
+    description: Local development
+
+tags:
+  - name: Authentication
+    description: Login, logout, token refresh
+  - name: Users
+    description: User management operations
+  - name: Health
+    description: Service health and metadata
+
+paths:
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Authenticate user and issue JWT
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token using refresh token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Revoke refresh token and logout
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Logout successful
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List all users (Committee only)
+      operationId: listUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          description: Filter by user role
+          schema:
+            type: string
+            enum: [Member, Volunteer, Committee]
+        - name: status
+          in: query
+          description: Filter by user status
+          schema:
+            type: string
+            enum: [Active, Inactive, Suspended]
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: User list retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+    post:
+      tags: [Users]
+      summary: Create new user account (Committee only)
+      operationId: createUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      operationId: getUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags: [Users]
+      summary: Update user (Committee only, or own profile for contact info)
+      operationId: updateUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags: [Users]
+      summary: Deactivate user account (Committee only)
+      operationId: deactivateUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deactivated
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: Cannot deactivate user with pending actions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current authenticated user profile
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check endpoint
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token issued by /auth/login
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: SecurePass123!
+
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token (24-hour expiry)
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          description: Refresh token (30-day expiry)
+          example: 8f5d2a1b-3c4e-5f6g-7h8i-9j0k1l2m3n4o
+        expiresIn:
+          type: integer
+          description: Access token expiry in seconds
+          example: 86400
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          example: 8f5d2a1b-3c4e-5f6g-7h8i-9j0k1l2m3n4o
+
+    CreateUserRequest:
+      type: object
+      required:
+        - email
+        - password
+        - firstName
+        - lastName
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          example: new.user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Must contain uppercase, lowercase, and number
+          example: SecurePass123!
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Jane
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Smith
+        phoneNumber:
+          type: string
+          nullable: true
+          pattern: '^(\+44|0)[0-9]{10}$'
+          example: '+447700900123'
+        address:
+          type: string
+          nullable: true
+          maxLength: 500
+          example: '123 High Street, Village, AB12 3CD'
+        role:
+          type: string
+          enum: [Member, Volunteer, Committee]
+          example: Volunteer
+        committeeRole:
+          type: string
+          nullable: true
+          enum: [Treasurer, Chairman, Clerk, BarManager, General]
+          description: Required if role is Committee
+          example: Treasurer
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Jane
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Smith
+        phoneNumber:
+          type: string
+          nullable: true
+          pattern: '^(\+44|0)[0-9]{10}$'
+          example: '+447700900123'
+        address:
+          type: string
+          nullable: true
+          maxLength: 500
+        role:
+          type: string
+          enum: [Member, Volunteer, Committee]
+          description: Committee only
+        committeeRole:
+          type: string
+          nullable: true
+          enum: [Treasurer, Chairman, Clerk, BarManager, General]
+          description: Committee only
+        status:
+          type: string
+          enum: [Active, Inactive, Suspended]
+          description: Committee only
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        phoneNumber:
+          type: string
+          nullable: true
+          example: '+447700900123'
+        address:
+          type: string
+          nullable: true
+          example: '123 High Street, Village, AB12 3CD'
+        role:
+          type: string
+          enum: [Member, Volunteer, Committee]
+          example: Committee
+        committeeRole:
+          type: string
+          nullable: true
+          enum: [Treasurer, Chairman, Clerk, BarManager, General]
+          example: Treasurer
+        status:
+          type: string
+          enum: [Active, Inactive, Suspended]
+          example: Active
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-01-15T10:30:00Z'
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2025-10-18T19:45:00Z'
+
+    UserListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        totalCount:
+          type: integer
+          example: 42
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 50
+        totalPages:
+          type: integer
+          example: 1
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: Healthy
+        version:
+          type: string
+          example: 1.0.0
+        timestamp:
+          type: string
+          format: date-time
+          example: '2025-10-18T20:00:00Z'
+        dependencies:
+          type: object
+          properties:
+            database:
+              type: string
+              example: Healthy
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: An error occurred
+        code:
+          type: string
+          example: AUTH_FAILED
+        timestamp:
+          type: string
+          format: date-time
+          example: '2025-10-18T20:00:00Z'
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: email
+              message:
+                type: string
+                example: Invalid email format
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Unauthorized
+            code: AUTH_REQUIRED
+            timestamp: '2025-10-18T20:00:00Z'
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Forbidden - Committee role required
+            code: INSUFFICIENT_PERMISSIONS
+            timestamp: '2025-10-18T20:00:00Z'
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: User not found
+            code: NOT_FOUND
+            timestamp: '2025-10-18T20:00:00Z'

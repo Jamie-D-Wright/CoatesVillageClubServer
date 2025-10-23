@@ -1,0 +1,1242 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "9082629933701448917"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "environmentName": {
+      "type": "string"
+    },
+    "serviceName": {
+      "type": "string",
+      "defaultValue": "villageclub"
+    },
+    "sqlAdminLogin": {
+      "type": "securestring",
+      "metadata": {
+        "description": "SQL Server administrator login"
+      }
+    },
+    "sqlAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "SQL Server administrator password"
+      }
+    },
+    "apimPublisherEmail": {
+      "type": "string",
+      "defaultValue": "admin@coatesvillageclub.org",
+      "metadata": {
+        "description": "API Management publisher email"
+      }
+    },
+    "apimPublisherName": {
+      "type": "string",
+      "defaultValue": "Coates Village Club",
+      "metadata": {
+        "description": "API Management publisher name"
+      }
+    },
+    "jwtIssuer": {
+      "type": "string",
+      "defaultValue": "https://villageclub.coates.local",
+      "metadata": {
+        "description": "JWT Issuer for token validation"
+      }
+    },
+    "jwtAudience": {
+      "type": "string",
+      "defaultValue": "villageclub-api",
+      "metadata": {
+        "description": "JWT Audience for token validation"
+      }
+    },
+    "jwtAccessTokenExpiryMinutes": {
+      "type": "int",
+      "defaultValue": 60,
+      "metadata": {
+        "description": "JWT Token expiry in minutes"
+      }
+    },
+    "jwtRefreshTokenExpiryDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "metadata": {
+        "description": "JWT Refresh token expiry in days"
+      }
+    }
+  },
+  "variables": {
+    "membershipFunctionAppName": "[format('func-{0}-membership-{1}', parameters('serviceName'), parameters('environmentName'))]",
+    "appServicePlanName": "[format('asp-{0}-{1}', parameters('serviceName'), parameters('environmentName'))]",
+    "appInsightsName": "[format('appi-{0}-{1}', parameters('serviceName'), parameters('environmentName'))]",
+    "keyVaultName": "[format('kv-{0}', take(format('{0}{1}', parameters('serviceName'), parameters('environmentName')), 21))]",
+    "functionStorageAccountName": "[format('stfunc{0}', toLower(take(parameters('environmentName'), 3)))]",
+    "dataStorageAccountName": "[format('stvc{0}', toLower(parameters('environmentName')))]",
+    "sqlServerName": "[format('sql-{0}-{1}', parameters('serviceName'), parameters('environmentName'))]",
+    "apimName": "[format('apim-{0}-{1}', parameters('serviceName'), parameters('environmentName'))]"
+  },
+  "resources": {
+    "functionStorageAccount": {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2022-09-01",
+      "name": "[variables('functionStorageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "supportsHttpsTrafficOnly": true,
+        "minimumTlsVersion": "TLS1_2"
+      }
+    },
+    "appServicePlan": {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-03-01",
+      "name": "[variables('appServicePlanName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic"
+      }
+    },
+    "appInsights": {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "DisableIpMasking": false,
+        "Flow_Type": "Bluefield"
+      }
+    },
+    "keyVault": {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2022-07-01",
+      "name": "[variables('keyVaultName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "enabledForDeployment": false,
+        "enabledForDiskEncryption": false,
+        "enabledForTemplateDeployment": false,
+        "tenantId": "[subscription().tenantId]",
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "accessPolicies": []
+      }
+    },
+    "functionApp": {
+      "existing": true,
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-03-01",
+      "name": "[variables('membershipFunctionAppName')]",
+      "dependsOn": [
+        "membershipFunctionApp"
+      ]
+    },
+    "keyVaultAccessPolicy": {
+      "type": "Microsoft.KeyVault/vaults/accessPolicies",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'add')]",
+      "properties": {
+        "accessPolicies": [
+          {
+            "objectId": "[reference('functionApp', '2022-03-01', 'full').identity.principalId]",
+            "tenantId": "[subscription().tenantId]",
+            "permissions": {
+              "secrets": [
+                "get",
+                "list"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "functionApp",
+        "keyVault"
+      ]
+    },
+    "membershipFunctionApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "membershipFunctionApp",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "functionAppName": {
+            "value": "[variables('membershipFunctionAppName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "appServicePlanId": {
+            "value": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
+          },
+          "storageAccountName": {
+            "value": "[variables('functionStorageAccountName')]"
+          },
+          "appInsightsConnectionString": {
+            "value": "[reference('appInsights').ConnectionString]"
+          },
+          "keyVaultName": {
+            "value": "[variables('keyVaultName')]"
+          },
+          "sqlServerFqdn": {
+            "value": "[reference('sqlDatabase').outputs.sqlServerFqdn.value]"
+          },
+          "databaseName": {
+            "value": "[reference('sqlDatabase').outputs.databaseName.value]"
+          },
+          "sqlAdminLogin": {
+            "value": "[parameters('sqlAdminLogin')]"
+          },
+          "sqlAdminPassword": {
+            "value": "[parameters('sqlAdminPassword')]"
+          },
+          "additionalAppSettings": {
+            "value": [
+              {
+                "name": "JwtSettings__Issuer",
+                "value": "[parameters('jwtIssuer')]"
+              },
+              {
+                "name": "JwtSettings__Audience",
+                "value": "[parameters('jwtAudience')]"
+              },
+              {
+                "name": "JwtSettings__AccessTokenExpiryMinutes",
+                "value": "[string(parameters('jwtAccessTokenExpiryMinutes'))]"
+              },
+              {
+                "name": "JwtSettings__RefreshTokenExpiryDays",
+                "value": "[string(parameters('jwtRefreshTokenExpiryDays'))]"
+              },
+              {
+                "name": "ServiceSettings__ApplicationName",
+                "value": "VillageClub.Membership"
+              },
+              {
+                "name": "ServiceSettings__EnvironmentName",
+                "value": "[parameters('environmentName')]"
+              },
+              {
+                "name": "WEBSITE_RUN_FROM_PACKAGE",
+                "value": "1"
+              },
+              {
+                "name": "DataStorage__AccountName",
+                "value": "[reference('dataStorage').outputs.storageAccountName.value]"
+              },
+              {
+                "name": "DataStorage__ReceiptsContainer",
+                "value": "receipts"
+              }
+            ]
+          },
+          "tags": {
+            "value": {
+              "Environment": "[parameters('environmentName')]",
+              "Service": "[parameters('serviceName')]",
+              "Component": "Membership"
+            }
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "14067722768793913875"
+            }
+          },
+          "parameters": {
+            "functionAppName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Function App"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the Function App"
+              }
+            },
+            "appServicePlanId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service Plan ID"
+              }
+            },
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name for Function App"
+              }
+            },
+            "appInsightsConnectionString": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Insights Connection String"
+              }
+            },
+            "keyVaultName": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault Name for secrets"
+              }
+            },
+            "sqlServerFqdn": {
+              "type": "string",
+              "metadata": {
+                "description": "SQL Server FQDN"
+              }
+            },
+            "databaseName": {
+              "type": "string",
+              "metadata": {
+                "description": "Database Name"
+              }
+            },
+            "sqlAdminLogin": {
+              "type": "securestring",
+              "metadata": {
+                "description": "SQL Admin Login (stored in Key Vault)"
+              }
+            },
+            "sqlAdminPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "SQL Admin Password (stored in Key Vault)"
+              }
+            },
+            "additionalAppSettings": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Additional app settings"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to resources"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('functionAppName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "functionapp",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('appServicePlanId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "netFrameworkVersion": "v8.0",
+                  "ftpsState": "Disabled",
+                  "minTlsVersion": "1.2",
+                  "appSettings": "[concat(createArray(createObject('name', 'AzureWebJobsStorage', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', parameters('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').keys[0].value)), createObject('name', 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', parameters('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').keys[0].value)), createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', parameters('appInsightsConnectionString')), createObject('name', 'FUNCTIONS_EXTENSION_VERSION', 'value', '~4'), createObject('name', 'FUNCTIONS_WORKER_RUNTIME', 'value', 'dotnet-isolated'), createObject('name', 'KeyVaultName', 'value', parameters('keyVaultName')), createObject('name', 'SqlConnection__Server', 'value', parameters('sqlServerFqdn')), createObject('name', 'SqlConnection__Database', 'value', parameters('databaseName')), createObject('name', 'SqlConnection__UserId', 'value', parameters('sqlAdminLogin')), createObject('name', 'SqlConnection__Password', 'value', parameters('sqlAdminPassword'))), parameters('additionalAppSettings'))]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "functionAppName": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App Name"
+              },
+              "value": "[parameters('functionAppName')]"
+            },
+            "functionAppHostname": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App Default Hostname"
+              },
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-01-01').defaultHostName]"
+            },
+            "functionAppPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App Principal ID (Managed Identity)"
+              },
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-01-01', 'full').identity.principalId]"
+            },
+            "functionAppId": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App Resource ID"
+              },
+              "value": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "appInsights",
+        "appServicePlan",
+        "dataStorage",
+        "functionStorageAccount",
+        "keyVault",
+        "sqlDatabase"
+      ]
+    },
+    "sqlDatabase": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "sqlDatabase",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "sqlServerName": {
+            "value": "[variables('sqlServerName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "sqlAdminLogin": {
+            "value": "[parameters('sqlAdminLogin')]"
+          },
+          "sqlAdminPassword": {
+            "value": "[parameters('sqlAdminPassword')]"
+          },
+          "databaseName": {
+            "value": "VillageClubDB"
+          },
+          "enableServerless": {
+            "value": true
+          },
+          "minCapacity": {
+            "value": "0.5"
+          },
+          "maxCapacity": {
+            "value": "2"
+          },
+          "autoPauseDelay": {
+            "value": 60
+          },
+          "tags": {
+            "value": {
+              "Environment": "[parameters('environmentName')]",
+              "Service": "[parameters('serviceName')]"
+            }
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "16315759454424084371"
+            }
+          },
+          "parameters": {
+            "sqlServerName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the SQL Server"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the SQL Server"
+              }
+            },
+            "sqlAdminLogin": {
+              "type": "securestring",
+              "metadata": {
+                "description": "SQL Administrator login name"
+              }
+            },
+            "sqlAdminPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "SQL Administrator password"
+              }
+            },
+            "databaseName": {
+              "type": "string",
+              "defaultValue": "VillageClubDB",
+              "metadata": {
+                "description": "Name of the database"
+              }
+            },
+            "edition": {
+              "type": "string",
+              "defaultValue": "GeneralPurpose",
+              "allowedValues": [
+                "Basic",
+                "Standard",
+                "Premium",
+                "GeneralPurpose"
+              ],
+              "metadata": {
+                "description": "SQL Server Edition"
+              }
+            },
+            "enableServerless": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable serverless compute"
+              }
+            },
+            "minCapacity": {
+              "type": "string",
+              "defaultValue": "0.5",
+              "metadata": {
+                "description": "Minimum vCores for serverless (0.5, 0.75, 1, etc.)"
+              }
+            },
+            "maxCapacity": {
+              "type": "string",
+              "defaultValue": "2",
+              "metadata": {
+                "description": "Maximum vCores for serverless"
+              }
+            },
+            "autoPauseDelay": {
+              "type": "int",
+              "defaultValue": 60,
+              "metadata": {
+                "description": "Auto-pause delay in minutes (-1 to disable)"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to resources"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Sql/servers",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[parameters('sqlServerName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "administratorLogin": "[parameters('sqlAdminLogin')]",
+                "administratorLoginPassword": "[parameters('sqlAdminPassword')]",
+                "version": "12.0",
+                "minimalTlsVersion": "1.2",
+                "publicNetworkAccess": "Enabled"
+              }
+            },
+            {
+              "type": "Microsoft.Sql/servers/firewallRules",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('sqlServerName'), 'AllowAzureServices')]",
+              "properties": {
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "0.0.0.0"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Sql/servers/databases",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('sqlServerName'), parameters('databaseName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[if(parameters('enableServerless'), 'GP_S_Gen5', 'GP_Gen5')]",
+                "tier": "[parameters('edition')]",
+                "capacity": "[if(parameters('enableServerless'), int(parameters('maxCapacity')), 2)]"
+              },
+              "properties": {
+                "collation": "SQL_Latin1_General_CP1_CI_AS",
+                "maxSizeBytes": 2147483648,
+                "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+                "zoneRedundant": false,
+                "readScale": "Disabled",
+                "autoPauseDelay": "[if(parameters('enableServerless'), parameters('autoPauseDelay'), -1)]",
+                "minCapacity": "[if(parameters('enableServerless'), json(parameters('minCapacity')), null())]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Sql/servers/auditingSettings",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('sqlServerName'), 'default')]",
+              "properties": {
+                "state": "Enabled",
+                "isAzureMonitorTargetEnabled": true,
+                "retentionDays": 90
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "sqlServerFqdn": {
+              "type": "string",
+              "metadata": {
+                "description": "SQL Server FQDN"
+              },
+              "value": "[reference(resourceId('Microsoft.Sql/servers', parameters('sqlServerName')), '2023-05-01-preview').fullyQualifiedDomainName]"
+            },
+            "databaseName": {
+              "type": "string",
+              "metadata": {
+                "description": "Database name"
+              },
+              "value": "[parameters('databaseName')]"
+            },
+            "sqlServerId": {
+              "type": "string",
+              "metadata": {
+                "description": "SQL Server resource ID"
+              },
+              "value": "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+            },
+            "databaseId": {
+              "type": "string",
+              "metadata": {
+                "description": "Database resource ID"
+              },
+              "value": "[resourceId('Microsoft.Sql/servers/databases', parameters('sqlServerName'), parameters('databaseName'))]"
+            }
+          }
+        }
+      }
+    },
+    "dataStorage": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "dataStorage",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountName": {
+            "value": "[variables('dataStorageAccountName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "storageAccountSku": {
+            "value": "Standard_LRS"
+          },
+          "containerNames": {
+            "value": [
+              "receipts",
+              "documents",
+              "exports"
+            ]
+          },
+          "coolTierTransitionDays": {
+            "value": 90
+          },
+          "deleteAfterDays": {
+            "value": 2555
+          },
+          "tags": {
+            "value": {
+              "Environment": "[parameters('environmentName')]",
+              "Service": "[parameters('serviceName')]",
+              "Purpose": "Data Storage"
+            }
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "3988161004848706013"
+            }
+          },
+          "parameters": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the storage account"
+              }
+            },
+            "storageAccountSku": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Standard_ZRS",
+                "Premium_LRS"
+              ],
+              "metadata": {
+                "description": "Storage Account SKU"
+              }
+            },
+            "containerNames": {
+              "type": "array",
+              "defaultValue": [
+                "receipts",
+                "documents",
+                "exports"
+              ],
+              "metadata": {
+                "description": "Array of container names to create"
+              }
+            },
+            "coolTierTransitionDays": {
+              "type": "int",
+              "defaultValue": 90,
+              "metadata": {
+                "description": "Days before transitioning to Cool tier"
+              }
+            },
+            "deleteAfterDays": {
+              "type": "int",
+              "defaultValue": 2555,
+              "metadata": {
+                "description": "Days before deleting old files (0 = no deletion)"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to resources"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('storageAccountSku')]"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "accessTier": "Hot",
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": false,
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "defaultAction": "Allow"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "deleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 30
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "containers",
+                "count": "[length(parameters('containerNames'))]"
+              },
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerNames')[copyIndex()])]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/managementPolicies",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "policy": {
+                  "rules": [
+                    {
+                      "enabled": true,
+                      "name": "MoveToCoolTier",
+                      "type": "Lifecycle",
+                      "definition": {
+                        "actions": {
+                          "baseBlob": {
+                            "tierToCool": {
+                              "daysAfterModificationGreaterThan": "[parameters('coolTierTransitionDays')]"
+                            },
+                            "delete": "[if(greater(parameters('deleteAfterDays'), 0), createObject('daysAfterModificationGreaterThan', parameters('deleteAfterDays')), null())]"
+                          }
+                        },
+                        "filters": {
+                          "blobTypes": [
+                            "blockBlob"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name"
+              },
+              "value": "[parameters('storageAccountName')]"
+            },
+            "storageAccountPrimaryEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Primary Blob Endpoint"
+              },
+              "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').primaryEndpoints.blob]"
+            },
+            "storageAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Resource ID"
+              },
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            },
+            "containerNames": {
+              "type": "array",
+              "metadata": {
+                "description": "Container Names"
+              },
+              "value": "[parameters('containerNames')]"
+            }
+          }
+        }
+      }
+    },
+    "apiManagement": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "apiManagement",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "apimName": {
+            "value": "[variables('apimName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "publisherEmail": {
+            "value": "[parameters('apimPublisherEmail')]"
+          },
+          "publisherName": {
+            "value": "[parameters('apimPublisherName')]"
+          },
+          "sku": {
+            "value": "Consumption"
+          },
+          "tags": {
+            "value": {
+              "Environment": "[parameters('environmentName')]",
+              "Service": "[parameters('serviceName')]"
+            }
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "13031863549700569310"
+            }
+          },
+          "parameters": {
+            "apimName": {
+              "type": "string",
+              "metadata": {
+                "description": "API Management service name"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for API Management"
+              }
+            },
+            "publisherEmail": {
+              "type": "string",
+              "metadata": {
+                "description": "Publisher email"
+              }
+            },
+            "publisherName": {
+              "type": "string",
+              "metadata": {
+                "description": "Publisher name"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Consumption",
+              "allowedValues": [
+                "Consumption",
+                "Developer",
+                "Basic",
+                "Standard",
+                "Premium"
+              ],
+              "metadata": {
+                "description": "SKU for API Management"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to resources"
+              }
+            },
+            "membershipServiceUrl": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Membership service backend URL"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ApiManagement/service",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[parameters('apimName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]",
+                "capacity": "[if(equals(parameters('sku'), 'Consumption'), 0, 1)]"
+              },
+              "properties": {
+                "publisherEmail": "[parameters('publisherEmail')]",
+                "publisherName": "[parameters('publisherName')]"
+              }
+            },
+            {
+              "condition": "[not(equals(parameters('membershipServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/namedValues",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('apimName'), 'membership-service-url')]",
+              "properties": {
+                "displayName": "membership-service-url",
+                "value": "[parameters('membershipServiceUrl')]",
+                "secret": false
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('membershipServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/backends",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('apimName'), 'membership-backend')]",
+              "properties": {
+                "description": "Membership Service Backend",
+                "url": "[parameters('membershipServiceUrl')]",
+                "protocol": "http"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('membershipServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('apimName'), 'membership-api')]",
+              "properties": {
+                "displayName": "Membership API",
+                "description": "User management, authentication, and authorization",
+                "path": "membership/api",
+                "protocols": [
+                  "https"
+                ],
+                "subscriptionRequired": false,
+                "apiVersion": "v1",
+                "serviceUrl": "[parameters('membershipServiceUrl')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('membershipServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/policies",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'membership-api', 'policy')]",
+              "properties": {
+                "value": "<policies>\r\n  <inbound>\r\n    <base />\r\n    <set-backend-service backend-id=\"membership-backend\" />\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>\r\n",
+                "format": "xml"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'membership-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('membershipServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'membership-api', 'health')]",
+              "properties": {
+                "displayName": "Health Check",
+                "method": "GET",
+                "urlTemplate": "/v1/health",
+                "description": "Check health status of Membership service",
+                "responses": [
+                  {
+                    "statusCode": 200,
+                    "description": "Service is healthy",
+                    "representations": [
+                      {
+                        "contentType": "application/json"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'membership-api')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('apimName'), 'service-registry')]",
+              "properties": {
+                "displayName": "Service Registry",
+                "description": "Service discovery and health check aggregation",
+                "path": "registry",
+                "protocols": [
+                  "https"
+                ],
+                "subscriptionRequired": false,
+                "isCurrent": true
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'service-registry', 'list-services')]",
+              "properties": {
+                "displayName": "List All Services",
+                "method": "GET",
+                "urlTemplate": "/services",
+                "description": "Returns metadata for all registered services including health status and OpenAPI URLs",
+                "responses": [
+                  {
+                    "statusCode": 200,
+                    "description": "Success",
+                    "representations": [
+                      {
+                        "contentType": "application/json"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'service-registry')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/operations/policies",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}/{3}', parameters('apimName'), 'service-registry', 'list-services', 'policy')]",
+              "properties": {
+                "value": "<policies>\r\n  <inbound>\r\n    <base />\r\n    <return-response>\r\n      <set-status code=\"200\" reason=\"OK\" />\r\n      <set-header name=\"Content-Type\" exists-action=\"override\">\r\n        <value>application/json</value>\r\n      </set-header>\r\n      <set-body>@{\r\n        var services = new JArray();\r\n        \r\n        // Membership Service\r\n        var membership = new JObject();\r\n        membership[\"name\"] = \"Membership\";\r\n        membership[\"version\"] = \"v1\";\r\n        membership[\"basePath\"] = \"/membership/api/v1\";\r\n        membership[\"healthEndpoint\"] = \"/membership/api/v1/health\";\r\n        membership[\"openapiUrl\"] = \"/membership/swagger.json\";\r\n        membership[\"description\"] = \"User management, authentication, and authorization\";\r\n        services.Add(membership);\r\n        \r\n        var result = new JObject();\r\n        result[\"services\"] = services;\r\n        result[\"timestamp\"] = DateTime.UtcNow.ToString(\"o\");\r\n        \r\n        return result.ToString();\r\n      }\r\n      </set-body>\r\n    </return-response>\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>\r\n",
+                "format": "xml"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis/operations', parameters('apimName'), 'service-registry', 'list-services')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/policies",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('apimName'), 'policy')]",
+              "properties": {
+                "value": "<policies>\r\n  <inbound>\r\n    <cors allow-credentials=\"true\">\r\n      <allowed-origins>\r\n        <origin>http://localhost:3000</origin>\r\n        <origin>http://localhost:5173</origin>\r\n      </allowed-origins>\r\n      <allowed-methods>\r\n        <method>GET</method>\r\n        <method>POST</method>\r\n        <method>PUT</method>\r\n        <method>DELETE</method>\r\n        <method>OPTIONS</method>\r\n      </allowed-methods>\r\n      <allowed-headers>\r\n        <header>*</header>\r\n      </allowed-headers>\r\n      <expose-headers>\r\n        <header>*</header>\r\n      </expose-headers>\r\n    </cors>\r\n    <!-- JWT validation using public key from Membership service -->\r\n    <choose>\r\n      <when condition=\"@(context.Request.Url.Path.Contains(\"/registry/\") || context.Request.Url.Path.Contains(\"/health\") || context.Request.Url.Path.Contains(\"/auth/login\") || context.Request.Url.Path.Contains(\"/auth/register\"))\">\r\n        <!-- Skip JWT validation for public endpoints: service registry, health checks, login, register -->\r\n      </when>\r\n      <otherwise>\r\n        <!-- Validate JWT for protected endpoints -->\r\n        <validate-jwt header-name=\"Authorization\" failed-validation-httpcode=\"401\" failed-validation-error-message=\"Unauthorized. Valid JWT token required.\">\r\n          <openid-config url=\"{{membership-service-url}}/api/v1/health\" />\r\n          <audiences>\r\n            <audience>village-club-api</audience>\r\n          </audiences>\r\n          <issuers>\r\n            <issuer>village-club-membership</issuer>\r\n          </issuers>\r\n          <required-claims>\r\n            <claim name=\"sub\" match=\"any\">\r\n              <value>@(context.Request.Headers.GetValueOrDefault(\"Authorization\",\"\").Split(' ').Last())</value>\r\n            </claim>\r\n          </required-claims>\r\n        </validate-jwt>\r\n      </otherwise>\r\n    </choose>\r\n  </inbound>\r\n  <backend>\r\n    <forward-request />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <set-header name=\"Content-Type\" exists-action=\"override\">\r\n      <value>application/json</value>\r\n    </set-header>\r\n    <set-body>@{\r\n      return new JObject(\r\n        new JProperty(\"message\", context.LastError.Message),\r\n        new JProperty(\"code\", \"GATEWAY_ERROR\"),\r\n        new JProperty(\"timestamp\", DateTime.UtcNow.ToString(\"o\"))\r\n      ).ToString();\r\n    }</set-body>\r\n  </on-error>\r\n</policies>\r\n",
+                "format": "xml"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "apimName": {
+              "type": "string",
+              "metadata": {
+                "description": "API Management Service Name"
+              },
+              "value": "[parameters('apimName')]"
+            },
+            "apimGatewayUrl": {
+              "type": "string",
+              "metadata": {
+                "description": "API Management Gateway URL"
+              },
+              "value": "[reference(resourceId('Microsoft.ApiManagement/service', parameters('apimName')), '2023-05-01-preview').gatewayUrl]"
+            },
+            "apimId": {
+              "type": "string",
+              "metadata": {
+                "description": "API Management Resource ID"
+              },
+              "value": "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+            },
+            "serviceRegistryUrl": {
+              "type": "string",
+              "metadata": {
+                "description": "Service Registry URL"
+              },
+              "value": "[format('{0}/registry/v1/services', reference(resourceId('Microsoft.ApiManagement/service', parameters('apimName')), '2023-05-01-preview').gatewayUrl)]"
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputs": {
+    "membershipFunctionAppName": {
+      "type": "string",
+      "value": "[variables('membershipFunctionAppName')]"
+    },
+    "membershipFunctionAppUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference('functionApp').defaultHostName)]"
+    },
+    "sqlServerFqdn": {
+      "type": "string",
+      "value": "[reference('sqlDatabase').outputs.sqlServerFqdn.value]"
+    },
+    "databaseName": {
+      "type": "string",
+      "value": "[reference('sqlDatabase').outputs.databaseName.value]"
+    },
+    "apimGatewayUrl": {
+      "type": "string",
+      "value": "[reference('apiManagement').outputs.apimGatewayUrl.value]"
+    },
+    "apimName": {
+      "type": "string",
+      "value": "[reference('apiManagement').outputs.apimName.value]"
+    },
+    "serviceRegistryUrl": {
+      "type": "string",
+      "value": "[reference('apiManagement').outputs.serviceRegistryUrl.value]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[variables('keyVaultName')]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "value": "[reference('keyVault').vaultUri]"
+    },
+    "functionStorageAccountName": {
+      "type": "string",
+      "value": "[variables('functionStorageAccountName')]"
+    },
+    "dataStorageAccountName": {
+      "type": "string",
+      "value": "[reference('dataStorage').outputs.storageAccountName.value]"
+    },
+    "dataStorageAccountId": {
+      "type": "string",
+      "value": "[reference('dataStorage').outputs.storageAccountId.value]"
+    },
+    "containerNames": {
+      "type": "array",
+      "value": "[reference('dataStorage').outputs.containerNames.value]"
+    },
+    "appInsightsConnectionString": {
+      "type": "string",
+      "value": "[reference('appInsights').ConnectionString]"
+    },
+    "resourceGroupName": {
+      "type": "string",
+      "value": "[resourceGroup().name]"
+    }
+  }
+}

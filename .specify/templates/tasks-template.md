@@ -17,10 +17,13 @@ description: "Task list template for feature implementation"
 - Include exact file paths in descriptions
 
 ## Path Conventions
+- **Microservices**: `services/[service-name]/src/`, `services/[service-name]/tests/`
+- **Shared libraries**: `libs/[lib-name]/`
 - **Single project**: `src/`, `tests/` at repository root
 - **Web app**: `backend/src/`, `frontend/src/`
 - **Mobile**: `api/src/`, `ios/src/` or `android/src/`
 - Paths shown below assume single project - adjust based on plan.md structure
+- For microservices features, group tasks by affected service
 
 <!-- 
   ============================================================================
@@ -41,17 +44,71 @@ description: "Task list template for feature implementation"
   ============================================================================
 -->
 
-## Phase 1: Setup (Shared Infrastructure)
+## Phase 1: Library Design (Library-First Development)
 
-**Purpose**: Project initialization and basic structure
+**Purpose**: Design and create library structure BEFORE implementation
 
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
+**⚠️ CRITICAL**: ALL features MUST begin as libraries. No direct service implementation allowed.
+
+- [ ] T001 Create library structure in `libs/[feature-name]/`
+- [ ] T002 Define library interface and contracts
+- [ ] T003 [P] Write contract tests for library interface (MUST FAIL initially)
+- [ ] T004 [P] Document library API and usage in README.md
+- [ ] T005 Setup library project with dependencies
+
+**Checkpoint**: Library interface designed and contract tests written (RED phase)
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## Phase 2: Library Implementation (TDD Red-Green-Refactor)
+
+**Purpose**: Implement library following strict TDD workflow
+
+**⚠️ CRITICAL**: For EACH unit of functionality:
+1. Write test FIRST
+2. Verify test FAILS (RED)
+3. Implement minimal code
+4. Verify test PASSES (GREEN)
+5. Refactor
+
+### Library Core Functionality
+
+- [ ] T006 [P] Write unit test for [function1] (verify FAILS)
+- [ ] T007 Implement [function1] to pass test (verify PASSES)
+- [ ] T008 [P] Write unit test for [function2] (verify FAILS)
+- [ ] T009 Implement [function2] to pass test (verify PASSES)
+- [ ] T010 [P] Write integration test with real database (verify FAILS)
+- [ ] T011 Implement database integration (verify PASSES)
+- [ ] T012 Refactor library code while keeping tests GREEN
+
+**Checkpoint**: Library complete, fully tested in isolation, contract tests PASS
+
+---
+
+## Phase 3: Service Integration
+
+**Purpose**: Integrate library into service(s)
+
+- [ ] T013 Add library reference to service project
+- [ ] T014 [P] Write service integration test (verify FAILS)
+- [ ] T015 Integrate library into service (verify PASSES)
+- [ ] T016 Update service configuration and dependency injection
+
+**Checkpoint**: Library integrated, service tests PASS
+
+---
+
+## Phase 4: Setup (Additional Infrastructure)
+
+**Purpose**: Project initialization and basic structure
+
+- [ ] T017 Create project structure per implementation plan
+- [ ] T018 Initialize [language] project with [framework] dependencies
+- [ ] T019 [P] Configure linting and formatting tools
+
+---
+
+## Phase 5: Foundational (Blocking Prerequisites)
 
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
@@ -59,40 +116,48 @@ description: "Task list template for feature implementation"
 
 Examples of foundational tasks (adjust based on your project):
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T020 Setup database schema and migrations framework
+- [ ] T021 [P] Implement authentication/authorization framework
+- [ ] T022 [P] Setup API routing and middleware structure
+- [ ] T023 Create base models/entities that all stories depend on
+- [ ] T024 Configure error handling and logging infrastructure
+- [ ] T025 Setup environment configuration management
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---
 
-## Phase 3: User Story 1 - [Title] (Priority: P1) 🎯 MVP
+## Phase 6: User Story 1 - [Title] (Priority: P1) 🎯 MVP
 
 **Goal**: [Brief description of what this story delivers]
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 1 (TDD - Write tests FIRST) ⚠️
 
-**NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+**CRITICAL TDD Workflow for EACH task**:
+1. Write test FIRST
+2. Run test - verify it FAILS (RED)
+3. Write implementation
+4. Run test - verify it PASSES (GREEN)
+5. Refactor while keeping GREEN
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T026 [P] [US1] Write contract test for [endpoint] (verify FAILS)
+- [ ] T027 [P] [US1] Write integration test with real database for [user journey] (verify FAILS)
+- [ ] T028 [P] [US1] Write unit test for [Entity1] (verify FAILS)
+- [ ] T029 [P] [US1] Write unit test for [Entity2] (verify FAILS)
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
-- [ ] T017 [US1] Add logging for user story 1 operations
+- [ ] T030 [P] [US1] Create [Entity1] model to pass test T028 (verify GREEN)
+- [ ] T031 [P] [US1] Create [Entity2] model to pass test T029 (verify GREEN)
+- [ ] T032 [US1] Implement [Service] to pass integration test (depends on T030, T031, verify GREEN)
+- [ ] T033 [US1] Implement [endpoint/feature] to pass contract test (verify GREEN)
+- [ ] T034 [US1] Add validation and error handling (update tests as needed)
+- [ ] T035 [US1] Add logging for user story 1 operations
+- [ ] T036 [US1] Refactor code while keeping all tests GREEN
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently, all tests GREEN
 
 ---
 
