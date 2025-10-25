@@ -1,39 +1,41 @@
 # Coates Village Club Server Constitution
 
 <!--
-Version Change: 2.2.0 → 2.2.1 (Patch Update)
+Version Change: 2.2.1 → 2.3.0 (Minor Update)
 
-PATCH changes:
-- Clarified testing scope to exclude third-party libraries and middleware
-- Added explicit guidance on what requires testing vs. what can be assumed functional
+MINOR changes:
+- Added new Principle IX: Local-First Development (NON-NEGOTIABLE)
+- Updated Development Process to require local testing before Azure deployment
+- Added local development metrics to Quality Metrics section
+
+Added sections:
+- Principle IX: Local-First Development - requires all features to be fully testable locally
+  using emulators, containerized services, and local testing tools before any Azure deployment
 
 Modified sections:
-- Test-First Development (Principle I): Added Testing Scope Exclusions section
-- Comprehensive Testing (Principle IV): Added Third-Party Components section clarifying scope
+- Development Process: Added local testing verification steps before deployment
+- Quality Metrics: Added Local Development Metrics section
 
 Rationale:
-Recent development revealed confusion about testing scope. Third-party libraries (Serilog, 
-FluentValidation, Entity Framework, Azure Functions SDK) are professionally maintained with 
-their own test suites. Our tests should focus on our business logic and integration points, 
-not on verifying that third-party libraries work as documented. This clarification reduces 
-unnecessary test complexity while maintaining quality standards for our code.
+Current development workflow requires publishing to Azure for every test cycle, which is
+inefficient, slow, and costly. Local-first development accelerates the development cycle,
+reduces cloud costs, and enables reliable debugging. Developers must be able to run the
+entire system locally using Azure emulators (Azurite, Functions Core Tools), containerized
+databases (SQL Server in Docker), and local testing tools. This principle ensures rapid
+iteration and quality validation before deployment.
 
-Examples of exclusions:
-- Logging middleware (Serilog) - assume it logs correctly
-- Validation frameworks (FluentValidation) - assume validation rules execute
-- ORM functionality (Entity Framework) - assume queries execute correctly
-- Framework middleware (Azure Functions HTTP pipeline) - assume request/response handling works
-- Authentication libraries - assume token validation works per documentation
-
-We DO test:
-- Our business logic that uses these libraries
-- Our configuration of these libraries
-- Our integration points with these libraries
-- Our custom middleware and extensions
+Benefits:
+- Faster development cycle (seconds vs. minutes for feedback)
+- No cloud costs during development
+- Reliable debugging with full access to logs and state
+- Offline development capability
+- Reduced risk of breaking shared Azure resources
+- Easier onboarding for new developers
 
 Templates requiring updates:
 ✅ Updated: Constitution file
-⚠️  Templates already align with this clarification (no changes needed)
+⚠️  Review needed: plan-template.md, spec-template.md, tasks-template.md
+    (ensure local testing guidance is included in development workflows)
 
 Follow-up TODOs: None
 -->
@@ -343,6 +345,56 @@ Every feature MUST begin as a standalone library before application integration:
 
 Rationale: Library-first development ensures reusability, prevents tight coupling between features and application code, promotes better architecture through clear interface design, and enables testing features in isolation before service integration. This approach makes code more maintainable and reduces duplication across services.
 
+### IX. Local-First Development (NON-NEGOTIABLE)
+All features MUST be fully testable locally before deployment to Azure:
+
+**Local Development Environment Requirements**:
+- All Azure services MUST have local equivalents for development
+- Local development setup MUST be documented and automated where possible
+- Developers MUST be able to run the complete system on their workstation
+- Local testing MUST verify functionality before any Azure deployment
+- Cloud resources MUST NOT be required for development or testing
+
+**Local Service Equivalents (MANDATORY)**:
+- **Azure Functions**: Use Azure Functions Core Tools (`func start`) for local execution
+- **Azure Storage**: Use Azurite emulator for blob, queue, and table storage
+- **Azure SQL Database**: Use SQL Server in Docker or SQL Server Express with LocalDB
+- **Azure Cosmos DB**: Use Cosmos DB emulator (Windows) or Docker container
+- **Azure Service Bus**: Use local emulator or Docker container (Emulator for Azure Service Bus)
+- **Application Insights**: Use console logging or local Application Insights emulator
+- **Key Vault**: Use local.settings.json or environment variables for secrets during development
+
+**Local Testing Workflow (MANDATORY)**:
+1. **Setup**: Developer runs local environment setup (one-time or scripted)
+2. **Development**: Code and test using local services (Azurite, local SQL, func start)
+3. **Unit Tests**: Run against in-memory or local containerized dependencies
+4. **Integration Tests**: Run against local service instances (Functions Core Tools + Azurite + local DB)
+5. **Local Verification**: Manually test complete user flows locally
+6. **Only After Local Success**: Deploy to Azure for environment-specific validation
+7. **Never**: Deploy to Azure to test a bug fix or new feature before local verification
+
+**Local Configuration**:
+- Each service MUST have `local.settings.json` for local Azure Functions configuration
+- Local connection strings MUST point to local services (localhost, Azurite defaults)
+- Local settings MUST NOT be committed to version control (use `.gitignore`)
+- Example/template local settings MUST be provided (e.g., `local.settings.json.example`)
+- Environment-specific settings MUST be documented in service README files
+
+**Local Development Standards**:
+- Local setup time MUST be under 30 minutes for new developers (including tool installation)
+- Local test execution MUST complete in under 5 minutes for full suite
+- Local services MUST start successfully without manual configuration steps
+- Local debugging MUST provide full access to logs, breakpoints, and state inspection
+- Documentation MUST include troubleshooting guide for common local setup issues
+
+**Prohibited Practices**:
+- Publishing to Azure to test code changes before local verification
+- Requiring Azure resources for unit or integration tests
+- Hard-coding Azure connection strings or endpoints in code
+- Relying on cloud services for developer productivity
+
+Rationale: Local-first development dramatically accelerates the development cycle, reduces cloud costs, and provides reliable debugging capabilities. Requiring Azure deployment for every test creates a slow, expensive, and frustrating workflow. Local emulators and containerized services provide a production-like environment without cloud dependencies, enabling rapid iteration and confident deployment.
+
 ## Quality Metrics
 The following metrics MUST be tracked and maintained:
 
@@ -379,44 +431,83 @@ The following metrics MUST be tracked and maintained:
 - Mean Time to Recovery (MTTR): ≤30 minutes
 - Change failure rate: ≤5%
 
+### Local Development Metrics
+- Local environment setup time: ≤30 minutes (new developer, including tools)
+- Local test suite execution time: ≤5 minutes (full suite)
+- Local service startup time: ≤60 seconds (all services)
+- Local debugging success rate: 100% (breakpoints, logs, state inspection work)
+- Local-to-Azure parity: 100% (features work identically in both environments)
+
 ## Development Process
-1. Identify affected service(s) in feature specification
-2. Create feature branch from main
-3. **Design library interface first** (Library-First Development):
+1. **Verify local environment setup** (Local-First Development):
+   - Ensure local emulators are running (Azurite, SQL Server, etc.)
+   - Verify local.settings.json configuration for affected service(s)
+   - Confirm local services start successfully
+2. Identify affected service(s) in feature specification
+3. Create feature branch from main
+4. **Design library interface first** (Library-First Development):
    - Define library interface and contracts in `libs/`
    - Document expected behavior and API surface
    - Create contract tests for library interface
-4. **Follow strict TDD workflow** (Red-Green-Refactor):
+5. **Follow strict TDD workflow** (Red-Green-Refactor):
    - Write unit test for next functionality
    - **Run test and verify it FAILS (RED phase)**
    - Write minimal implementation code
    - **Run test and verify it PASSES (GREEN phase)**
    - Refactor while keeping tests green
    - Repeat for each unit of functionality
-5. Implement library with realistic test environments:
+6. Implement library with realistic test environments:
    - Use real databases in integration tests (in-memory or containerized)
    - Use actual service instances for inter-service tests
    - Mock only external third-party services
-6. Verify library works in isolation before service integration
-7. Integrate library into service(s)
-8. Write service integration tests following TDD workflow
-9. Update API contracts in `libs/contracts/` if service interfaces change
-10. Verify quality metrics compliance for affected services
-11. Address all build warnings before committing:
+7. Verify library works in isolation before service integration
+8. Integrate library into service(s)
+9. **Run and test locally (MANDATORY before Azure deployment)**:
+   - Start local Azure Functions with `func start`
+   - Run full local test suite (unit + integration + E2E)
+   - Manually verify user flows using local endpoints (http://localhost:7071)
+   - Test service-to-service interactions locally
+   - Debug issues with full access to logs and breakpoints
+   - **DO NOT proceed to Azure deployment until all local tests pass**
+10. Write service integration tests following TDD workflow
+11. Update API contracts in `libs/contracts/` if service interfaces change
+12. Verify quality metrics compliance for affected services
+13. Address all build warnings before committing:
     - Fix documentation warnings in production code
     - Add XML documentation to all public APIs
     - Configure NoWarn for acceptable test project warnings
     - Document any intentional TODOs with context
-12. Run service-specific test suite
-13. Run cross-service integration tests if multiple services affected
-14. Update Architecture Decision Records (ADRs) if architectural changes made
-15. Conduct code review
-16. Merge only if all checks pass (zero warnings in production code, all tests GREEN)
+14. Run service-specific test suite (locally)
+15. Run cross-service integration tests if multiple services affected (locally)
+16. Update Architecture Decision Records (ADRs) if architectural changes made
+17. Conduct code review
+18. **Deploy to Azure only after local verification**:
+    - All local tests passing
+    - Manual local testing complete
+    - Zero warnings in production code
+    - All quality metrics met
+19. **Azure deployment validation** (environment-specific testing):
+    - Verify Azure-specific configuration (App Settings, connection strings)
+    - Test Azure-specific integrations (Application Insights, Key Vault)
+    - Confirm service health checks pass
+    - Validate cross-service communication in Azure environment
+20. Merge only if all checks pass (local AND Azure validation complete)
 
 **For multi-service features**:
 - Changes MUST be backward compatible OR coordinated deployment plan MUST be documented
 - API versioning MUST be used for breaking changes
 - Feature flags SHOULD be used for gradual rollout
+
+**Local-First Verification Checklist**:
+- [ ] Local emulators configured and running
+- [ ] Local.settings.json populated with correct local connection strings
+- [ ] Service starts locally with `func start` (no errors)
+- [ ] All unit tests pass locally
+- [ ] All integration tests pass locally (with local services)
+- [ ] Manual testing complete via local endpoints
+- [ ] Cross-service communication verified locally (if applicable)
+- [ ] No cloud resources required for development or testing
+- [ ] Only after all above: Deploy to Azure for environment validation
 
 ## Architecture Decision Records (ADR)
 
@@ -443,4 +534,10 @@ All pull requests MUST verify compliance with these principles. Exceptions requi
 - Breaking changes require migration plan and version bump
 - New services require ADR documenting justification and boundaries
 
-**Version**: 2.2.1 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-19
+**Local-First Development governance**:
+- Features MUST be fully testable locally before Azure deployment
+- Local development setup MUST be documented and maintained
+- Azure deployment is for environment validation, not primary development/testing
+- Violations of local-first development require explicit approval with documented justification
+
+**Version**: 2.3.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-25

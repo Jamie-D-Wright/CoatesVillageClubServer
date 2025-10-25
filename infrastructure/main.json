@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "9082629933701448917"
+      "templateHash": "5593840457255865749"
     }
   },
   "parameters": {
@@ -19,7 +19,7 @@
     },
     "serviceName": {
       "type": "string",
-      "defaultValue": "villageclub"
+      "defaultValue": "coatesvillageclub"
     },
     "sqlAdminLogin": {
       "type": "securestring",
@@ -35,7 +35,7 @@
     },
     "apimPublisherEmail": {
       "type": "string",
-      "defaultValue": "admin@coatesvillageclub.org",
+      "defaultValue": "wright.jamied@gmail.com",
       "metadata": {
         "description": "API Management publisher email"
       }
@@ -49,14 +49,14 @@
     },
     "jwtIssuer": {
       "type": "string",
-      "defaultValue": "https://villageclub.coates.local",
+      "defaultValue": "https://coatesvillageclub.dev",
       "metadata": {
         "description": "JWT Issuer for token validation"
       }
     },
     "jwtAudience": {
       "type": "string",
-      "defaultValue": "villageclub-api",
+      "defaultValue": "coatesvillageclub-api",
       "metadata": {
         "description": "JWT Audience for token validation"
       }
@@ -77,14 +77,18 @@
     }
   },
   "variables": {
-    "membershipFunctionAppName": "[format('func-{0}-membership-{1}', parameters('serviceName'), parameters('environmentName'))]",
-    "appServicePlanName": "[format('asp-{0}-{1}', parameters('serviceName'), parameters('environmentName'))]",
-    "appInsightsName": "[format('appi-{0}-{1}', parameters('serviceName'), parameters('environmentName'))]",
-    "keyVaultName": "[format('kv-{0}', take(format('{0}{1}', parameters('serviceName'), parameters('environmentName')), 21))]",
-    "functionStorageAccountName": "[format('stfunc{0}', toLower(take(parameters('environmentName'), 3)))]",
-    "dataStorageAccountName": "[format('stvc{0}', toLower(parameters('environmentName')))]",
-    "sqlServerName": "[format('sql-{0}-{1}', parameters('serviceName'), parameters('environmentName'))]",
-    "apimName": "[format('apim-{0}-{1}', parameters('serviceName'), parameters('environmentName'))]"
+    "membershipFunctionAppName": "[format('func-membership-{0}', parameters('environmentName'))]",
+    "appServicePlanName": "[format('plan-{0}', parameters('environmentName'))]",
+    "appInsightsName": "[format('insights-{0}', parameters('environmentName'))]",
+    "keyVaultName": "[format('vault-{0}', parameters('environmentName'))]",
+    "functionStorageAccountName": "[format('stfunc{0}', toLower(parameters('environmentName')))]",
+    "membershipStorageAccountName": "[format('stmembership{0}', toLower(parameters('environmentName')))]",
+    "eventsStorageAccountName": "[format('stevents{0}', toLower(parameters('environmentName')))]",
+    "shiftsStorageAccountName": "[format('stshifts{0}', toLower(parameters('environmentName')))]",
+    "stockStorageAccountName": "[format('ststock{0}', toLower(parameters('environmentName')))]",
+    "financeStorageAccountName": "[format('stfinance{0}', toLower(parameters('environmentName')))]",
+    "sqlServerName": "[format('sqlserver-{0}', parameters('environmentName'))]",
+    "apimName": "[format('apim-{0}', parameters('environmentName'))]"
   },
   "resources": {
     "functionStorageAccount": {
@@ -241,14 +245,6 @@
               {
                 "name": "WEBSITE_RUN_FROM_PACKAGE",
                 "value": "1"
-              },
-              {
-                "name": "DataStorage__AccountName",
-                "value": "[reference('dataStorage').outputs.storageAccountName.value]"
-              },
-              {
-                "name": "DataStorage__ReceiptsContainer",
-                "value": "receipts"
               }
             ]
           },
@@ -405,7 +401,6 @@
       "dependsOn": [
         "appInsights",
         "appServicePlan",
-        "dataStorage",
         "functionStorageAccount",
         "keyVault",
         "sqlDatabase"
@@ -443,7 +438,7 @@
             "value": "0.5"
           },
           "maxCapacity": {
-            "value": "2"
+            "value": "1"
           },
           "autoPauseDelay": {
             "value": 60
@@ -645,10 +640,10 @@
         }
       }
     },
-    "dataStorage": {
+    "membershipStorage": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
-      "name": "dataStorage",
+      "name": "membershipStorage",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -656,7 +651,7 @@
         "mode": "Incremental",
         "parameters": {
           "storageAccountName": {
-            "value": "[variables('dataStorageAccountName')]"
+            "value": "[variables('membershipStorageAccountName')]"
           },
           "location": {
             "value": "[parameters('location')]"
@@ -666,8 +661,694 @@
           },
           "containerNames": {
             "value": [
-              "receipts",
+              "documents"
+            ]
+          },
+          "coolTierTransitionDays": {
+            "value": 90
+          },
+          "deleteAfterDays": {
+            "value": 2555
+          },
+          "tags": {
+            "value": {
+              "Environment": "[parameters('environmentName')]",
+              "Service": "[parameters('serviceName')]",
+              "Purpose": "Membership Service Storage"
+            }
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "3988161004848706013"
+            }
+          },
+          "parameters": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the storage account"
+              }
+            },
+            "storageAccountSku": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Standard_ZRS",
+                "Premium_LRS"
+              ],
+              "metadata": {
+                "description": "Storage Account SKU"
+              }
+            },
+            "containerNames": {
+              "type": "array",
+              "defaultValue": [
+                "receipts",
+                "documents",
+                "exports"
+              ],
+              "metadata": {
+                "description": "Array of container names to create"
+              }
+            },
+            "coolTierTransitionDays": {
+              "type": "int",
+              "defaultValue": 90,
+              "metadata": {
+                "description": "Days before transitioning to Cool tier"
+              }
+            },
+            "deleteAfterDays": {
+              "type": "int",
+              "defaultValue": 2555,
+              "metadata": {
+                "description": "Days before deleting old files (0 = no deletion)"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to resources"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('storageAccountSku')]"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "accessTier": "Hot",
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": false,
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "defaultAction": "Allow"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "deleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 30
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "containers",
+                "count": "[length(parameters('containerNames'))]"
+              },
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerNames')[copyIndex()])]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/managementPolicies",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "policy": {
+                  "rules": [
+                    {
+                      "enabled": true,
+                      "name": "MoveToCoolTier",
+                      "type": "Lifecycle",
+                      "definition": {
+                        "actions": {
+                          "baseBlob": {
+                            "tierToCool": {
+                              "daysAfterModificationGreaterThan": "[parameters('coolTierTransitionDays')]"
+                            },
+                            "delete": "[if(greater(parameters('deleteAfterDays'), 0), createObject('daysAfterModificationGreaterThan', parameters('deleteAfterDays')), null())]"
+                          }
+                        },
+                        "filters": {
+                          "blobTypes": [
+                            "blockBlob"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name"
+              },
+              "value": "[parameters('storageAccountName')]"
+            },
+            "storageAccountPrimaryEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Primary Blob Endpoint"
+              },
+              "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').primaryEndpoints.blob]"
+            },
+            "storageAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Resource ID"
+              },
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            },
+            "containerNames": {
+              "type": "array",
+              "metadata": {
+                "description": "Container Names"
+              },
+              "value": "[parameters('containerNames')]"
+            }
+          }
+        }
+      }
+    },
+    "eventsStorage": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "eventsStorage",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountName": {
+            "value": "[variables('eventsStorageAccountName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "storageAccountSku": {
+            "value": "Standard_LRS"
+          },
+          "containerNames": {
+            "value": [
+              "posters",
               "documents",
+              "photos"
+            ]
+          },
+          "coolTierTransitionDays": {
+            "value": 90
+          },
+          "deleteAfterDays": {
+            "value": 2555
+          },
+          "tags": {
+            "value": {
+              "Environment": "[parameters('environmentName')]",
+              "Service": "[parameters('serviceName')]",
+              "Purpose": "Events Service Storage"
+            }
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "3988161004848706013"
+            }
+          },
+          "parameters": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the storage account"
+              }
+            },
+            "storageAccountSku": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Standard_ZRS",
+                "Premium_LRS"
+              ],
+              "metadata": {
+                "description": "Storage Account SKU"
+              }
+            },
+            "containerNames": {
+              "type": "array",
+              "defaultValue": [
+                "receipts",
+                "documents",
+                "exports"
+              ],
+              "metadata": {
+                "description": "Array of container names to create"
+              }
+            },
+            "coolTierTransitionDays": {
+              "type": "int",
+              "defaultValue": 90,
+              "metadata": {
+                "description": "Days before transitioning to Cool tier"
+              }
+            },
+            "deleteAfterDays": {
+              "type": "int",
+              "defaultValue": 2555,
+              "metadata": {
+                "description": "Days before deleting old files (0 = no deletion)"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to resources"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('storageAccountSku')]"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "accessTier": "Hot",
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": false,
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "defaultAction": "Allow"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "deleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 30
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "containers",
+                "count": "[length(parameters('containerNames'))]"
+              },
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerNames')[copyIndex()])]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/managementPolicies",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "policy": {
+                  "rules": [
+                    {
+                      "enabled": true,
+                      "name": "MoveToCoolTier",
+                      "type": "Lifecycle",
+                      "definition": {
+                        "actions": {
+                          "baseBlob": {
+                            "tierToCool": {
+                              "daysAfterModificationGreaterThan": "[parameters('coolTierTransitionDays')]"
+                            },
+                            "delete": "[if(greater(parameters('deleteAfterDays'), 0), createObject('daysAfterModificationGreaterThan', parameters('deleteAfterDays')), null())]"
+                          }
+                        },
+                        "filters": {
+                          "blobTypes": [
+                            "blockBlob"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name"
+              },
+              "value": "[parameters('storageAccountName')]"
+            },
+            "storageAccountPrimaryEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Primary Blob Endpoint"
+              },
+              "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').primaryEndpoints.blob]"
+            },
+            "storageAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Resource ID"
+              },
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            },
+            "containerNames": {
+              "type": "array",
+              "metadata": {
+                "description": "Container Names"
+              },
+              "value": "[parameters('containerNames')]"
+            }
+          }
+        }
+      }
+    },
+    "shiftsStorage": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "shiftsStorage",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountName": {
+            "value": "[variables('shiftsStorageAccountName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "storageAccountSku": {
+            "value": "Standard_LRS"
+          },
+          "containerNames": {
+            "value": [
+              "schedules",
+              "reports"
+            ]
+          },
+          "coolTierTransitionDays": {
+            "value": 90
+          },
+          "deleteAfterDays": {
+            "value": 2555
+          },
+          "tags": {
+            "value": {
+              "Environment": "[parameters('environmentName')]",
+              "Service": "[parameters('serviceName')]",
+              "Purpose": "Shifts Service Storage"
+            }
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "3988161004848706013"
+            }
+          },
+          "parameters": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the storage account"
+              }
+            },
+            "storageAccountSku": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Standard_ZRS",
+                "Premium_LRS"
+              ],
+              "metadata": {
+                "description": "Storage Account SKU"
+              }
+            },
+            "containerNames": {
+              "type": "array",
+              "defaultValue": [
+                "receipts",
+                "documents",
+                "exports"
+              ],
+              "metadata": {
+                "description": "Array of container names to create"
+              }
+            },
+            "coolTierTransitionDays": {
+              "type": "int",
+              "defaultValue": 90,
+              "metadata": {
+                "description": "Days before transitioning to Cool tier"
+              }
+            },
+            "deleteAfterDays": {
+              "type": "int",
+              "defaultValue": 2555,
+              "metadata": {
+                "description": "Days before deleting old files (0 = no deletion)"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to resources"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('storageAccountSku')]"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "accessTier": "Hot",
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": false,
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "defaultAction": "Allow"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "deleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 30
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "containers",
+                "count": "[length(parameters('containerNames'))]"
+              },
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerNames')[copyIndex()])]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/managementPolicies",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "policy": {
+                  "rules": [
+                    {
+                      "enabled": true,
+                      "name": "MoveToCoolTier",
+                      "type": "Lifecycle",
+                      "definition": {
+                        "actions": {
+                          "baseBlob": {
+                            "tierToCool": {
+                              "daysAfterModificationGreaterThan": "[parameters('coolTierTransitionDays')]"
+                            },
+                            "delete": "[if(greater(parameters('deleteAfterDays'), 0), createObject('daysAfterModificationGreaterThan', parameters('deleteAfterDays')), null())]"
+                          }
+                        },
+                        "filters": {
+                          "blobTypes": [
+                            "blockBlob"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name"
+              },
+              "value": "[parameters('storageAccountName')]"
+            },
+            "storageAccountPrimaryEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Primary Blob Endpoint"
+              },
+              "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').primaryEndpoints.blob]"
+            },
+            "storageAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Resource ID"
+              },
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            },
+            "containerNames": {
+              "type": "array",
+              "metadata": {
+                "description": "Container Names"
+              },
+              "value": "[parameters('containerNames')]"
+            }
+          }
+        }
+      }
+    },
+    "stockStorage": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "stockStorage",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountName": {
+            "value": "[variables('stockStorageAccountName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "storageAccountSku": {
+            "value": "Standard_LRS"
+          },
+          "containerNames": {
+            "value": [
+              "reports",
               "exports"
             ]
           },
@@ -681,7 +1362,238 @@
             "value": {
               "Environment": "[parameters('environmentName')]",
               "Service": "[parameters('serviceName')]",
-              "Purpose": "Data Storage"
+              "Purpose": "Stock Service Storage"
+            }
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "3988161004848706013"
+            }
+          },
+          "parameters": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the storage account"
+              }
+            },
+            "storageAccountSku": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Standard_ZRS",
+                "Premium_LRS"
+              ],
+              "metadata": {
+                "description": "Storage Account SKU"
+              }
+            },
+            "containerNames": {
+              "type": "array",
+              "defaultValue": [
+                "receipts",
+                "documents",
+                "exports"
+              ],
+              "metadata": {
+                "description": "Array of container names to create"
+              }
+            },
+            "coolTierTransitionDays": {
+              "type": "int",
+              "defaultValue": 90,
+              "metadata": {
+                "description": "Days before transitioning to Cool tier"
+              }
+            },
+            "deleteAfterDays": {
+              "type": "int",
+              "defaultValue": 2555,
+              "metadata": {
+                "description": "Days before deleting old files (0 = no deletion)"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to resources"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('storageAccountSku')]"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "accessTier": "Hot",
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2",
+                "allowBlobPublicAccess": false,
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "defaultAction": "Allow"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "deleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 30
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "containers",
+                "count": "[length(parameters('containerNames'))]"
+              },
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerNames')[copyIndex()])]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/managementPolicies",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "policy": {
+                  "rules": [
+                    {
+                      "enabled": true,
+                      "name": "MoveToCoolTier",
+                      "type": "Lifecycle",
+                      "definition": {
+                        "actions": {
+                          "baseBlob": {
+                            "tierToCool": {
+                              "daysAfterModificationGreaterThan": "[parameters('coolTierTransitionDays')]"
+                            },
+                            "delete": "[if(greater(parameters('deleteAfterDays'), 0), createObject('daysAfterModificationGreaterThan', parameters('deleteAfterDays')), null())]"
+                          }
+                        },
+                        "filters": {
+                          "blobTypes": [
+                            "blockBlob"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name"
+              },
+              "value": "[parameters('storageAccountName')]"
+            },
+            "storageAccountPrimaryEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Primary Blob Endpoint"
+              },
+              "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').primaryEndpoints.blob]"
+            },
+            "storageAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Resource ID"
+              },
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            },
+            "containerNames": {
+              "type": "array",
+              "metadata": {
+                "description": "Container Names"
+              },
+              "value": "[parameters('containerNames')]"
+            }
+          }
+        }
+      }
+    },
+    "financeStorage": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "financeStorage",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountName": {
+            "value": "[variables('financeStorageAccountName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "storageAccountSku": {
+            "value": "Standard_LRS"
+          },
+          "containerNames": {
+            "value": [
+              "receipts",
+              "invoices",
+              "statements",
+              "reports"
+            ]
+          },
+          "coolTierTransitionDays": {
+            "value": 90
+          },
+          "deleteAfterDays": {
+            "value": 2555
+          },
+          "tags": {
+            "value": {
+              "Environment": "[parameters('environmentName')]",
+              "Service": "[parameters('serviceName')]",
+              "Purpose": "Finance Service Storage"
             }
           }
         },
@@ -914,7 +1826,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "13031863549700569310"
+              "templateHash": "12158923217062997458"
             }
           },
           "parameters": {
@@ -1123,7 +2035,7 @@
               "apiVersion": "2023-05-01-preview",
               "name": "[format('{0}/{1}/{2}/{3}', parameters('apimName'), 'service-registry', 'list-services', 'policy')]",
               "properties": {
-                "value": "<policies>\r\n  <inbound>\r\n    <base />\r\n    <return-response>\r\n      <set-status code=\"200\" reason=\"OK\" />\r\n      <set-header name=\"Content-Type\" exists-action=\"override\">\r\n        <value>application/json</value>\r\n      </set-header>\r\n      <set-body>@{\r\n        var services = new JArray();\r\n        \r\n        // Membership Service\r\n        var membership = new JObject();\r\n        membership[\"name\"] = \"Membership\";\r\n        membership[\"version\"] = \"v1\";\r\n        membership[\"basePath\"] = \"/membership/api/v1\";\r\n        membership[\"healthEndpoint\"] = \"/membership/api/v1/health\";\r\n        membership[\"openapiUrl\"] = \"/membership/swagger.json\";\r\n        membership[\"description\"] = \"User management, authentication, and authorization\";\r\n        services.Add(membership);\r\n        \r\n        var result = new JObject();\r\n        result[\"services\"] = services;\r\n        result[\"timestamp\"] = DateTime.UtcNow.ToString(\"o\");\r\n        \r\n        return result.ToString();\r\n      }\r\n      </set-body>\r\n    </return-response>\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>\r\n",
+                "value": "<policies>\r\n  <inbound>\r\n    <base />\r\n    <return-response>\r\n      <set-status code=\"200\" reason=\"OK\" />\r\n      <set-header name=\"Content-Type\" exists-action=\"override\">\r\n        <value>application/json</value>\r\n      </set-header>\r\n      <set-body>@{\r\n        var services = new JArray();\r\n        \r\n        var membership = new JObject();\r\n        membership[\"name\"] = \"Membership\";\r\n        membership[\"version\"] = \"v1\";\r\n        membership[\"basePath\"] = \"/membership/api/v1\";\r\n        membership[\"healthEndpoint\"] = \"/membership/api/v1/health\";\r\n        membership[\"openapiUrl\"] = \"/membership/swagger.json\";\r\n        membership[\"description\"] = \"User management, authentication, and authorization\";\r\n        services.Add(membership);\r\n        \r\n        var result = new JObject();\r\n        result[\"services\"] = services;\r\n        result[\"timestamp\"] = DateTime.UtcNow.ToString(\"o\");\r\n        \r\n        return result.ToString();\r\n      }</set-body>\r\n    </return-response>\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>\r\n",
                 "format": "xml"
               },
               "dependsOn": [
@@ -1218,17 +2130,45 @@
       "type": "string",
       "value": "[variables('functionStorageAccountName')]"
     },
-    "dataStorageAccountName": {
+    "membershipStorageAccountName": {
       "type": "string",
-      "value": "[reference('dataStorage').outputs.storageAccountName.value]"
+      "value": "[reference('membershipStorage').outputs.storageAccountName.value]"
     },
-    "dataStorageAccountId": {
+    "membershipStorageAccountId": {
       "type": "string",
-      "value": "[reference('dataStorage').outputs.storageAccountId.value]"
+      "value": "[reference('membershipStorage').outputs.storageAccountId.value]"
     },
-    "containerNames": {
-      "type": "array",
-      "value": "[reference('dataStorage').outputs.containerNames.value]"
+    "eventsStorageAccountName": {
+      "type": "string",
+      "value": "[reference('eventsStorage').outputs.storageAccountName.value]"
+    },
+    "eventsStorageAccountId": {
+      "type": "string",
+      "value": "[reference('eventsStorage').outputs.storageAccountId.value]"
+    },
+    "shiftsStorageAccountName": {
+      "type": "string",
+      "value": "[reference('shiftsStorage').outputs.storageAccountName.value]"
+    },
+    "shiftsStorageAccountId": {
+      "type": "string",
+      "value": "[reference('shiftsStorage').outputs.storageAccountId.value]"
+    },
+    "stockStorageAccountName": {
+      "type": "string",
+      "value": "[reference('stockStorage').outputs.storageAccountName.value]"
+    },
+    "stockStorageAccountId": {
+      "type": "string",
+      "value": "[reference('stockStorage').outputs.storageAccountId.value]"
+    },
+    "financeStorageAccountName": {
+      "type": "string",
+      "value": "[reference('financeStorage').outputs.storageAccountName.value]"
+    },
+    "financeStorageAccountId": {
+      "type": "string",
+      "value": "[reference('financeStorage').outputs.storageAccountId.value]"
     },
     "appInsightsConnectionString": {
       "type": "string",

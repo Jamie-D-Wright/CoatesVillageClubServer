@@ -98,6 +98,53 @@ description: "Task list template for feature implementation"
 
 ---
 
+## Phase 4: Local Testing & Verification (Local-First Development)
+
+**Purpose**: Verify ALL functionality locally BEFORE Azure deployment
+
+**⚠️ CRITICAL**: Do NOT deploy to Azure until ALL local tests pass
+
+### Local Environment Setup
+- [ ] T017 Configure local.settings.json with local connection strings
+- [ ] T018 Start Azurite emulator for blob/queue/table storage
+- [ ] T019 Start local SQL Server (Docker or Express/LocalDB)
+- [ ] T020 Run database migrations against local SQL Server
+- [ ] T021 Verify local environment setup completes successfully
+
+### Local Service Execution
+- [ ] T022 Start Azure Functions locally with `func start`
+- [ ] T023 Verify all functions mapped and routes configured correctly
+- [ ] T024 Test health check endpoint locally (http://localhost:7071/api/v1/health)
+
+### Local Testing
+- [ ] T025 Run full unit test suite locally (all tests MUST PASS)
+- [ ] T026 Run integration tests against local services (Azurite + local SQL)
+- [ ] T027 Manually test user flows via local endpoints (Postman/curl)
+- [ ] T028 Test error handling and edge cases locally
+- [ ] T029 Test cross-service interactions locally (if applicable)
+- [ ] T030 Debug any issues with breakpoints and local logs
+
+**Checkpoint**: All local tests PASS, manual verification complete, NO Azure deployment yet
+
+---
+
+## Phase 5: Azure Deployment & Validation (After Local Success)
+
+**Purpose**: Deploy to Azure ONLY for environment-specific validation
+
+**Prerequisites**: ALL Phase 4 tasks MUST be complete and passing
+
+- [ ] T031 Deploy service to Azure (func azure functionapp publish)
+- [ ] T032 Verify Azure App Settings configuration
+- [ ] T033 Test health check on Azure endpoint
+- [ ] T034 Verify Azure-specific integrations (Application Insights, Key Vault)
+- [ ] T035 Test cross-service communication in Azure environment
+- [ ] T036 Monitor logs and metrics in Azure
+
+**Checkpoint**: Service deployed and validated in Azure environment
+
+---
+
 ## Phase 4: Setup (Additional Infrastructure)
 
 **Purpose**: Project initialization and basic structure

@@ -70,12 +70,11 @@ resource membershipApi 'Microsoft.ApiManagement/service/apis@2023-05-01-preview'
   properties: {
     displayName: 'Membership API'
     description: 'User management, authentication, and authorization'
-    path: 'membership/api'
+    path: 'membership'
     protocols: [
       'https'
     ]
     subscriptionRequired: false
-    apiVersion: 'v1'
     serviceUrl: membershipServiceUrl
   }
 }
@@ -113,7 +112,7 @@ resource membershipHealthOperation 'Microsoft.ApiManagement/service/apis/operati
   properties: {
     displayName: 'Health Check'
     method: 'GET'
-    urlTemplate: '/v1/health'
+    urlTemplate: '/api/v1/health'
     description: 'Check health status of Membership service'
     responses: [
       {
@@ -217,7 +216,7 @@ resource serviceListPolicy 'Microsoft.ApiManagement/service/apis/operations/poli
   }
 }
 
-// Global policy for all APIs - CORS, JWT validation, and error handling
+// Global policy for all APIs - CORS and error handling
 resource globalPolicy 'Microsoft.ApiManagement/service/policies@2023-05-01-preview' = {
   parent: apimService
   name: 'policy'
@@ -244,35 +243,11 @@ resource globalPolicy 'Microsoft.ApiManagement/service/policies@2023-05-01-previ
         <header>*</header>
       </expose-headers>
     </cors>
-    <!-- JWT validation using public key from Membership service -->
-    <choose>
-      <when condition="@(context.Request.Url.Path.Contains("/registry/") || context.Request.Url.Path.Contains("/health") || context.Request.Url.Path.Contains("/auth/login") || context.Request.Url.Path.Contains("/auth/register"))">
-        <!-- Skip JWT validation for public endpoints: service registry, health checks, login, register -->
-      </when>
-      <otherwise>
-        <!-- Validate JWT for protected endpoints -->
-        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Valid JWT token required.">
-          <openid-config url="{{membership-service-url}}/api/v1/health" />
-          <audiences>
-            <audience>village-club-api</audience>
-          </audiences>
-          <issuers>
-            <issuer>village-club-membership</issuer>
-          </issuers>
-          <required-claims>
-            <claim name="sub" match="any">
-              <value>@(context.Request.Headers.GetValueOrDefault("Authorization","").Split(' ').Last())</value>
-            </claim>
-          </required-claims>
-        </validate-jwt>
-      </otherwise>
-    </choose>
   </inbound>
   <backend>
     <forward-request />
   </backend>
   <outbound>
-    <base />
   </outbound>
   <on-error>
     <set-header name="Content-Type" exists-action="override">

@@ -10,8 +10,8 @@
         ".specify/scripts/bash/": true,
         ".specify/scripts/powershell/": true
     },
-    "azureFunctions.projectSubpath": "src\\VillageClub.Functions",
-    "azureFunctions.deploySubpath": "src\\VillageClub.Functions/bin/Release/net8.0/publish",
+    "azureFunctions.projectSubpath": "services\\membership",
+    "azureFunctions.deploySubpath": "services\\membership\\src\\VillageClub.Membership\\bin\\Release\\net8.0\\publish",
     "azureFunctions.projectLanguage": "C#",
     "azureFunctions.projectRuntime": "~4",
     "debug.internalConsoleOptions": "neverOpen",

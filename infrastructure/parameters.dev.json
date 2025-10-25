@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "dev"
+    },
+    "serviceName": {
+      "value": "coatesvillageclub"
+    },
+    "sqlAdminLogin": {
+      "value": "jamie.wright"
+    },
+    "sqlAdminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": ""
+        },
+        "secretName": "sql-admin-password"
+      }
+    },
+    "apimPublisherEmail": {
+      "value": "wright.jamied@gmail.com"
+    },
+    "apimPublisherName": {
+      "value": "Coates Village Club"
+    },
+    "jwtIssuer": {
+      "value": "https://villageclub.coates.local"
+    },
+    "jwtAudience": {
+      "value": "villageclub-api"
+    }
+  }
+}

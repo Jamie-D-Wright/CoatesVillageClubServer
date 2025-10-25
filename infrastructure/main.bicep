@@ -28,22 +28,22 @@ param jwtAccessTokenExpiryMinutes int = 60
 @description('JWT Refresh token expiry in days')
 param jwtRefreshTokenExpiryDays int = 30
 
-// Naming Convention: Simplified - service name removed as redundant
-// Format: {type}-{component?}-{environment}
-// Storage accounts: st{component}{env} (no hyphens, max 24 chars, lowercase only)
+// Naming Convention: cvc prefix for Coates Village Club
+// Format: cvc-{type}-{component?}-{environment}
+// Storage accounts: cvcst{component}{env} (no hyphens, max 24 chars, lowercase only)
 
-var membershipFunctionAppName = 'func-membership-${environmentName}'
-var appServicePlanName = 'plan-${environmentName}'
-var appInsightsName = 'insights-${environmentName}'
-var keyVaultName = 'vault-${environmentName}'  // vault-dev (max 24)
-var functionStorageAccountName = 'stfunc${toLower(environmentName)}'  // stfuncdev (9 chars)
-var membershipStorageAccountName = 'stmembership${toLower(environmentName)}'  // stmembershipdev (15 chars)
-var eventsStorageAccountName = 'stevents${toLower(environmentName)}'    // steventsdev (11 chars)
-var shiftsStorageAccountName = 'stshifts${toLower(environmentName)}'    // stshiftsdev (11 chars)
-var stockStorageAccountName = 'ststock${toLower(environmentName)}'     // ststockdev (10 chars)
-var financeStorageAccountName = 'stfinance${toLower(environmentName)}'   // stfinancedev (12 chars)
-var sqlServerName = 'sqlserver-${environmentName}'
-var apimName = 'apim-${environmentName}'
+var membershipFunctionAppName = 'cvc-func-membership-${environmentName}'
+var appServicePlanName = 'cvc-plan-${environmentName}'
+var appInsightsName = 'cvc-insights-${environmentName}'
+var keyVaultName = 'cvc-kv-${environmentName}'  // cvc-kv-dev (max 24)
+var functionStorageAccountName = 'cvcstfunc${toLower(environmentName)}'  // cvcstfuncdev (12 chars)
+var membershipStorageAccountName = 'cvcstmembership${toLower(environmentName)}'  // cvcstmembershipdev (18 chars)
+var eventsStorageAccountName = 'cvcstevents${toLower(environmentName)}'    // cvcsteventsdev (14 chars)
+var shiftsStorageAccountName = 'cvcstshifts${toLower(environmentName)}'    // cvcstshiftsdev (14 chars)
+var stockStorageAccountName = 'cvcststock${toLower(environmentName)}'     // cvcststockdev (13 chars)
+var financeStorageAccountName = 'cvcstfinance${toLower(environmentName)}'   // cvcstfinancedev (15 chars)
+var sqlServerName = 'cvc-sql-${environmentName}'
+var apimName = 'cvc-apim-${environmentName}'
 
 // Storage account for Azure Functions runtime
 resource functionStorageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
@@ -62,9 +62,13 @@ resource functionStorageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' =
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: appServicePlanName
   location: location
+  kind: 'linux'
   sku: {
     name: 'Y1'
     tier: 'Dynamic'
+  }
+  properties: {
+    reserved: true  // Required for Linux
   }
 }
 

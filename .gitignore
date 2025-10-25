@@ -69,6 +69,12 @@ project.assets.json
 # Azure Functions local settings
 local.settings.json
 
+# Azurite local storage emulator
+__azurite_db_*.json
+__blobstorage__/
+__queuestorage__/
+__tablestorage__/
+
 # IDE
 .idea/
 *.swp
