@@ -126,6 +126,7 @@ Example:
 - Unit tests: [What will be tested in isolation]
 - Integration tests: [What will be tested with real dependencies]
 - Contract tests: [What contracts must be validated before implementation]
+- API tests: [Postman collection with test scenarios for endpoints, validation, error handling]
 
 **Framework Independence**: [Explain how library remains framework-agnostic or justify framework coupling]
 

@@ -119,12 +119,26 @@ description: "Task list template for feature implementation"
 ### Local Testing
 - [ ] T025 Run full unit test suite locally (all tests MUST PASS)
 - [ ] T026 Run integration tests against local services (Azurite + local SQL)
-- [ ] T027 Manually test user flows via local endpoints (Postman/curl)
-- [ ] T028 Test error handling and edge cases locally
-- [ ] T029 Test cross-service interactions locally (if applicable)
-- [ ] T030 Debug any issues with breakpoints and local logs
+- [ ] T027 Create Postman collection for API testing in `tests/postman/[service-name].postman_collection.json`
+  - Include tests for all endpoints (health, authentication, CRUD operations)
+  - Add test scripts with assertions (status codes, response structure, business logic)
+  - Include validation tests (invalid inputs, edge cases)
+  - Add pre-request scripts for dynamic data (unique emails, timestamps)
+- [ ] T028 Create Postman environment file `tests/postman/local.postman_environment.json`
+  - Configure baseUrl (e.g., http://localhost:7071/api/v1)
+  - Define variables for tokens and IDs (auto-populated by tests)
+- [ ] T029 Install newman CLI (`npm install -g newman`) for automated test execution
+- [ ] T030 Run Postman collection with newman: `newman run [collection].json -e local.postman_environment.json`
+- [ ] T031 Document test suite usage in `tests/postman/README.md` with:
+  - How to run tests with newman
+  - How to import collections into Postman Desktop
+  - How to run specific folders or tests
+  - How to generate HTML reports
+- [ ] T032 Test error handling and edge cases locally
+- [ ] T033 Test cross-service interactions locally (if applicable)
+- [ ] T034 Debug any issues with breakpoints and local logs
 
-**Checkpoint**: All local tests PASS, manual verification complete, NO Azure deployment yet
+**Checkpoint**: All local tests PASS (unit, integration, API via newman), manual verification complete, NO Azure deployment yet
 
 ---
 

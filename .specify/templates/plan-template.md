@@ -21,6 +21,7 @@
 **Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
 **Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
 **Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**API Testing**: [Postman collections in tests/postman/, run with newman CLI]  
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
 **Project Type**: [single/web/mobile - determines source structure]  
 **Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
@@ -82,7 +83,11 @@ libs/
     └── README.md            # Library documentation
 
 tests/
-└── e2e/                     # Cross-service end-to-end tests
+├── e2e/                     # Cross-service end-to-end tests
+└── postman/                 # API test collections (run with newman)
+    ├── [service-name].postman_collection.json
+    ├── local.postman_environment.json
+    └── README.md
 
 # [REMOVE IF UNUSED] Option 2: Single project (for simple features)
 src/
