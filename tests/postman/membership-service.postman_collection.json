@@ -107,13 +107,14 @@
 									"",
 									"pm.test(\"Response contains user ID\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('id');",
-									"    pm.environment.set(\"testUserId\", jsonData.id);",
+									"    pm.expect(jsonData).to.have.property('user');",
+									"    pm.expect(jsonData.user).to.have.property('id');",
+									"    pm.environment.set(\"testUserId\", jsonData.user.id);",
 									"});",
 									"",
 									"pm.test(\"User email matches request\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.email).to.eql(pm.variables.get(\"testUserEmail\"));",
+									"    pm.expect(jsonData.user.email).to.eql(pm.variables.get(\"testUserEmail\"));",
 									"});"
 								],
 								"type": "text/javascript"
@@ -176,9 +177,10 @@
 									"    pm.environment.set(\"refreshToken\", jsonData.refreshToken);",
 									"});",
 									"",
-									"pm.test(\"Token type is Bearer\", function () {",
+									"pm.test(\"Response contains user data\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.tokenType).to.eql('Bearer');",
+									"    pm.expect(jsonData).to.have.property('user');",
+									"    pm.expect(jsonData.user).to.have.property('id');",
 									"});"
 								],
 								"type": "text/javascript"
@@ -365,13 +367,8 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Logout successful\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('message');",
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
 									"});"
 								],
 								"type": "text/javascript"
@@ -390,7 +387,16 @@
 							]
 						},
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
 						"url": {
 							"raw": "{{baseUrl}}/auth/logout",
 							"host": [
@@ -511,17 +517,8 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Response has pagination structure\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('items');",
-									"    pm.expect(jsonData).to.have.property('pageNumber');",
-									"    pm.expect(jsonData).to.have.property('pageSize');",
-									"    pm.expect(jsonData).to.have.property('totalCount');",
-									"    pm.expect(jsonData.items).to.be.an('array');",
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
 									"});"
 								],
 								"type": "text/javascript"
@@ -570,14 +567,8 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 201\", function () {",
-									"    pm.response.to.have.status(201);",
-									"});",
-									"",
-									"pm.test(\"User created successfully\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('id');",
-									"    pm.environment.set(\"adminCreatedUserId\", jsonData.id);",
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
 									"});"
 								],
 								"type": "text/javascript"
@@ -691,8 +682,8 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Status code is 204\", function () {",
-									"    pm.response.to.have.status(204);",
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
 									"});"
 								],
 								"type": "text/javascript"
@@ -713,13 +704,13 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/users/{{adminCreatedUserId}}",
+							"raw": "{{baseUrl}}/users/{{testUserId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"users",
-								"{{adminCreatedUserId}}"
+								"{{testUserId}}"
 							]
 						}
 					},

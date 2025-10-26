@@ -17,7 +17,7 @@ namespace VillageClub.Membership.Functions;
 /// <summary>
 /// Azure Functions for user management operations.
 /// </summary>
-public class UserFunctions
+public class UserFunctions : BaseFunctionWithJson
 {
     private readonly ILogger<UserFunctions> _logger;
     private readonly IUserService _userService;
@@ -78,7 +78,10 @@ public class UserFunctions
             var result = await _userService.GetAllAsync(pageNumber, pageSize);
 
             var response = req.CreateResponse(HttpStatusCode.OK);
-            await response.WriteAsJsonAsync(result);
+            response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var json = JsonSerializer.Serialize(result, options);
+            await response.WriteStringAsync(json);
             return response;
         }
         catch (Exception ex)
@@ -130,7 +133,10 @@ public class UserFunctions
             }
 
             var response = req.CreateResponse(HttpStatusCode.OK);
-            await response.WriteAsJsonAsync(user);
+            response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var json = JsonSerializer.Serialize(user, options);
+            await response.WriteStringAsync(json);
             return response;
         }
         catch (Exception ex)
@@ -172,7 +178,10 @@ public class UserFunctions
             }
 
             var response = req.CreateResponse(HttpStatusCode.OK);
-            await response.WriteAsJsonAsync(user);
+            response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var json = JsonSerializer.Serialize(user, options);
+            await response.WriteStringAsync(json);
             return response;
         }
         catch (Exception ex)
@@ -210,7 +219,8 @@ public class UserFunctions
                 return authResponse;
             }
 
-            var createRequest = await JsonSerializer.DeserializeAsync<CreateUserRequest>(req.Body);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var createRequest = await JsonSerializer.DeserializeAsync<CreateUserRequest>(req.Body, options);
             if (createRequest == null)
             {
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
@@ -225,8 +235,11 @@ public class UserFunctions
             var user = await _userService.CreateAsync(createRequest);
 
             var response = req.CreateResponse(HttpStatusCode.Created);
-            await response.WriteAsJsonAsync(user);
+            response.Headers.Add("Content-Type", "application/json; charset=utf-8");
             response.Headers.Add("Location", $"/api/users/{user.Id}");
+            var serializerOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var json = JsonSerializer.Serialize(user, serializerOptions);
+            await response.WriteStringAsync(json);
             return response;
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("email already exists"))
@@ -277,7 +290,8 @@ public class UserFunctions
                 return authResponse;
             }
 
-            var updateRequest = await JsonSerializer.DeserializeAsync<UpdateUserRequest>(req.Body);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var updateRequest = await JsonSerializer.DeserializeAsync<UpdateUserRequest>(req.Body, options);
             if (updateRequest == null)
             {
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
@@ -296,7 +310,10 @@ public class UserFunctions
             }
 
             var response = req.CreateResponse(HttpStatusCode.OK);
-            await response.WriteAsJsonAsync(user);
+            response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+            var serializerOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var json = JsonSerializer.Serialize(user, serializerOptions);
+            await response.WriteStringAsync(json);
             return response;
         }
         catch (Exception ex)
@@ -355,33 +372,5 @@ public class UserFunctions
             _logger.LogError(ex, "Error deleting user {UserId}", id);
             return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, "An error occurred while deleting the user");
         }
-    }
-
-    private static async Task<HttpResponseData> CreateErrorResponse(HttpRequestData req, HttpStatusCode statusCode, string message)
-    {
-        var response = req.CreateResponse(statusCode);
-        await response.WriteAsJsonAsync(new ErrorResponse
-        {
-            Message = message,
-            Code = statusCode.ToString().ToUpperInvariant(),
-        });
-        return response;
-    }
-
-    private static async Task<HttpResponseData> CreateValidationErrorResponse(HttpRequestData req, string[] errors)
-    {
-        var response = req.CreateResponse(HttpStatusCode.BadRequest);
-        var validationErrors = new Dictionary<string, string[]>
-        {
-            ["_general"] = errors,
-        };
-        
-        await response.WriteAsJsonAsync(new ErrorResponse
-        {
-            Message = "Validation failed",
-            Code = "VALIDATION_ERROR",
-            ValidationErrors = validationErrors,
-        });
-        return response;
     }
 }

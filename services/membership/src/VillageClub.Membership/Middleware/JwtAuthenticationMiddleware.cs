@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker.Middleware;
@@ -58,7 +59,7 @@ public class JwtAuthenticationMiddleware : IFunctionsWorkerMiddleware
         if (string.IsNullOrEmpty(authHeader))
         {
             _logger.LogWarning("Missing Authorization header");
-            await WriteUnauthorizedResponse(httpRequestData, "Missing Authorization header");
+            await WriteUnauthorizedResponse(context, httpRequestData, "Missing Authorization header");
             return;
         }
 
@@ -66,7 +67,7 @@ public class JwtAuthenticationMiddleware : IFunctionsWorkerMiddleware
         if (!authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
             _logger.LogWarning("Invalid Authorization header format");
-            await WriteUnauthorizedResponse(httpRequestData, "Invalid Authorization header format");
+            await WriteUnauthorizedResponse(context, httpRequestData, "Invalid Authorization header format");
             return;
         }
 
@@ -77,7 +78,7 @@ public class JwtAuthenticationMiddleware : IFunctionsWorkerMiddleware
         if (!validationResult.IsValid)
         {
             _logger.LogWarning("Token validation failed: {ErrorMessage}", validationResult.ErrorMessage);
-            await WriteUnauthorizedResponse(httpRequestData, "Invalid or expired token");
+            await WriteUnauthorizedResponse(context, httpRequestData, "Invalid or expired token");
             return;
         }
 
@@ -108,24 +109,41 @@ public class JwtAuthenticationMiddleware : IFunctionsWorkerMiddleware
     {
         var publicEndpoints = new[]
         {
-            "HealthCheck",
+            "Health",
+            "Ready",
             "Login",
+            "Register",
             "RefreshToken",
-            "GetHealth",
+            "RenderSwaggerUI",
+            "RenderSwaggerDocument",
+            "RenderOpenApiDocument",
+            "RenderOAuth2Redirect",
         };
 
-        return publicEndpoints.Contains(functionName, StringComparer.OrdinalIgnoreCase);
+        // Function names come through as "Functions.Login", "Functions.Register", etc.
+        // Extract just the function name after the last dot
+        var parts = functionName.Split('.');
+        var simpleFunctionName = parts.Length > 0 ? parts[parts.Length - 1] : functionName;
+
+        return publicEndpoints.Contains(simpleFunctionName, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
     /// Writes an unauthorized response.
     /// </summary>
+    /// <param name="context">Function context.</param>
     /// <param name="request">HTTP request data.</param>
     /// <param name="message">Error message.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    private static async Task WriteUnauthorizedResponse(HttpRequestData request, string message)
+    private static async Task WriteUnauthorizedResponse(FunctionContext context, HttpRequestData request, string message)
     {
         var response = request.CreateResponse(HttpStatusCode.Unauthorized);
-        await response.WriteAsJsonAsync(new { error = message });
+        response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        var json = JsonSerializer.Serialize(new { error = message }, options);
+        await response.WriteStringAsync(json);
+        
+        var invocationResult = context.GetInvocationResult();
+        invocationResult.Value = response;
     }
 }

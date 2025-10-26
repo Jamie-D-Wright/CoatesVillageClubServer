@@ -18,7 +18,7 @@ namespace VillageClub.Membership.Functions;
 /// <summary>
 /// Authentication functions for user login, registration, token management, and password changes.
 /// </summary>
-public class AuthFunctions
+public class AuthFunctions : BaseFunctionWithJson
 {
     private readonly ILogger<AuthFunctions> _logger;
     private readonly IAuthService _authService;
@@ -68,7 +68,7 @@ public class AuthFunctions
     {
         try
         {
-            var loginRequest = await JsonSerializer.DeserializeAsync<LoginRequest>(req.Body);
+            var loginRequest = await DeserializeRequestAsync<LoginRequest>(req);
             if (loginRequest == null)
             {
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
@@ -110,7 +110,7 @@ public class AuthFunctions
     {
         try
         {
-            var registerRequest = await JsonSerializer.DeserializeAsync<CreateUserRequest>(req.Body);
+            var registerRequest = await DeserializeRequestAsync<CreateUserRequest>(req);
             if (registerRequest == null)
             {
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
@@ -153,7 +153,7 @@ public class AuthFunctions
     {
         try
         {
-            var refreshRequest = await JsonSerializer.DeserializeAsync<RefreshTokenRequest>(req.Body);
+            var refreshRequest = await DeserializeRequestAsync<RefreshTokenRequest>(req);
             if (refreshRequest == null)
             {
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
@@ -195,7 +195,7 @@ public class AuthFunctions
     {
         try
         {
-            var refreshRequest = await JsonSerializer.DeserializeAsync<RefreshTokenRequest>(req.Body);
+            var refreshRequest = await DeserializeRequestAsync<RefreshTokenRequest>(req);
             if (refreshRequest == null)
             {
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
@@ -245,7 +245,7 @@ public class AuthFunctions
                 return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "User not authenticated");
             }
 
-            var changePasswordRequest = await JsonSerializer.DeserializeAsync<ChangePasswordRequest>(req.Body);
+            var changePasswordRequest = await DeserializeRequestAsync<ChangePasswordRequest>(req);
             if (changePasswordRequest == null)
             {
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request body");
@@ -264,48 +264,13 @@ public class AuthFunctions
                 return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Current password is incorrect");
             }
 
-            var response = req.CreateResponse(HttpStatusCode.NoContent);
-            return response;
+            // Return 204 No Content for successful password change
+            return req.CreateResponse(HttpStatusCode.NoContent);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during password change");
             return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, "An error occurred during password change");
         }
-    }
-
-    private static async Task<HttpResponseData> CreateSuccessResponse<T>(HttpRequestData req, T data, HttpStatusCode statusCode)
-    {
-        var response = req.CreateResponse(statusCode);
-        await response.WriteAsJsonAsync(data);
-        return response;
-    }
-
-    private static async Task<HttpResponseData> CreateErrorResponse(HttpRequestData req, HttpStatusCode statusCode, string message, string? code = null)
-    {
-        var response = req.CreateResponse(statusCode);
-        await response.WriteAsJsonAsync(new ErrorResponse
-        {
-            Message = message,
-            Code = code ?? statusCode.ToString().ToUpperInvariant(),
-            Timestamp = DateTime.UtcNow,
-        });
-        return response;
-    }
-
-    private static async Task<HttpResponseData> CreateValidationErrorResponse(HttpRequestData req, string[] errors)
-    {
-        var response = req.CreateResponse(HttpStatusCode.BadRequest);
-        await response.WriteAsJsonAsync(new ErrorResponse
-        {
-            Message = "Validation failed",
-            Code = "VALIDATION_ERROR",
-            ValidationErrors = new Dictionary<string, string[]>
-            {
-                { "general", errors },
-            },
-            Timestamp = DateTime.UtcNow,
-        });
-        return response;
     }
 }

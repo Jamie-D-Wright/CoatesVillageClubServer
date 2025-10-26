@@ -136,10 +136,10 @@ public class MembershipDbContext : DbContext
                 .IsUnique()
                 .HasDatabaseName("IX_RefreshTokens_Token");
 
-            // Foreign key
-            entity.HasOne<User>()
+            // Foreign key - use explicit navigation property
+            entity.HasOne(rt => rt.User)
                 .WithMany()
-                .HasForeignKey(e => e.UserId)
+                .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

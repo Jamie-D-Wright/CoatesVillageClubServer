@@ -12,7 +12,7 @@ namespace VillageClub.Membership.Functions;
 /// <summary>
 /// Health check functions for service monitoring and JWT public key distribution.
 /// </summary>
-public class HealthFunctions
+public class HealthFunctions : BaseFunctionWithJson
 {
     private readonly ILogger<HealthFunctions> _logger;
 
