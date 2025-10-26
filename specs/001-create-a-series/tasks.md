@@ -197,6 +197,17 @@ This is a microservices monorepo with 6 independently deployable Azure Function 
 - [X] L032 [LOCAL] Inspect local logs in console (verify structured logging works) - ✅ COMPLETE: Logs visible and structured
 - [X] L033 [LOCAL] Test exception handling (trigger error, verify ErrorResponse DTO returned) - ✅ COMPLETE: Error responses working correctly
 
+### E2E Test Automation (Principle XI)
+- [X] L034 [LOCAL] [E2E] Create automated E2E test workflow script `scripts/test-e2e.ps1` (start → test → stop) - ✅ COMPLETE: Full automation with flexible modes
+- [X] L035 [LOCAL] [E2E] Create service startup script `scripts/start-membership-service.ps1` (PowerShell background job) - ✅ COMPLETE: Non-blocking execution
+- [X] L036 [LOCAL] [E2E] Create service shutdown script `scripts/stop-membership-service.ps1` (cleanup jobs and processes) - ✅ COMPLETE: Proper resource cleanup
+- [X] L037 [LOCAL] [E2E] Create test execution script `scripts/run-e2e-tests.ps1` (Newman with Postman collection) - ✅ COMPLETE: Executes 17 requests, 32 assertions
+- [X] L038 [LOCAL] [E2E] Create debugging utility script `scripts/debug-service.ps1` (status, health, jobs, processes) - ✅ COMPLETE: Multi-purpose debugging
+- [X] L039 [LOCAL] [E2E] Create log viewing script `scripts/view-service-logs.ps1` (tail, follow, filter) - ✅ COMPLETE: Comprehensive log querying
+- [X] L040 [LOCAL] [E2E] Create comprehensive documentation `scripts/README.md` (quick start, debugging, troubleshooting) - ✅ COMPLETE: Full guide with examples
+- [X] L041 [LOCAL] [E2E] Verify all scripts use UTF-8 encoding (prevent PowerShell parse errors) - ✅ COMPLETE: All scripts recreated with UTF-8
+- [X] L042 [LOCAL] [E2E] Test complete E2E workflow: `.\scripts\test-e2e.ps1` - ✅ COMPLETE: 17 requests, 32 assertions, 100% pass rate
+
 **Success Criteria**:
 - ✅ All functions start locally without errors
 - ✅ All 17 endpoints accessible at http://localhost:7071

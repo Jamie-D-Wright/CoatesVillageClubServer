@@ -110,7 +110,16 @@ Build a complete microservices-based system for village club management supporti
   - Shared types in libs/VillageClub.Contracts
   - No circular dependencies (API Gateway → Services, never reverse)
 
-### ✅ Principle VII: Microservices Architecture
+### ✅ Principle VII: API and Data Format Standards
+- **Status**: COMPLIANT
+- **Plan**:
+  - All services use camelCase JSON serialization (System.Text.Json configured)
+  - ErrorResponse DTO with `error`, `code`, `validationErrors` fields
+  - HTTP status codes: 200 (OK), 201 (Created), 204 (No Content), 400 (Bad Request), 401 (Unauthorized), 403 (Forbidden), 404 (Not Found), 500 (Internal Error)
+  - API versioning: `/api/v1/` path prefix
+  - Content-Type: `application/json; charset=utf-8`
+
+### ✅ Principle VIII: Microservices Architecture
 - **Status**: COMPLIANT
 - **Plan**: 
   - 6 independently deployable Azure Function Apps
@@ -118,6 +127,45 @@ Build a complete microservices-based system for village club management supporti
   - Shared libs published as internal NuGet packages (local feed)
   - API versioning via route prefixes (/api/v1/)
   - Bicep modules per service in infrastructure/modules/
+
+### ✅ Principle IX: Library-First Development
+- **Status**: COMPLIANT
+- **Plan**:
+  - VillageClub.Auth library (JWT token service, authentication logic)
+  - VillageClub.Contracts library (shared DTOs, interfaces, validation)
+  - All business logic implemented in libraries before service integration
+  - Services orchestrate library components via dependency injection
+
+### ✅ Principle X: Local-First Development
+- **Status**: COMPLIANT
+- **Plan**:
+  - Azure Functions Core Tools for local execution (func start)
+  - Azurite emulator for blob/queue/table storage
+  - SQL Server in Docker for local database
+  - local.settings.json for local configuration (gitignored)
+  - Comprehensive local testing before Azure deployment
+  - Documentation: docs/LOCAL-DEVELOPMENT.md
+  - Automation: scripts/start-local-env.ps1
+
+### ✅ Principle XI: Automated E2E Test Infrastructure
+- **Status**: COMPLIANT
+- **Implementation**:
+  - **Complete E2E Workflow**: `scripts/test-e2e.ps1` (start → test → stop)
+  - **Background Job Management**: PowerShell background jobs for non-blocking service execution
+  - **Service Control Scripts**:
+    - `scripts/start-membership-service.ps1` - Start as background job
+    - `scripts/stop-membership-service.ps1` - Stop and cleanup
+    - `scripts/run-e2e-tests.ps1` - Execute Newman tests
+  - **Debugging Tools**:
+    - `scripts/debug-service.ps1` - Status, health, jobs, processes
+    - `scripts/view-service-logs.ps1` - Log querying (tail, follow, filter)
+  - **Test Collections**:
+    - `tests/postman/membership-service.postman_collection.json` (17 requests, 32 assertions)
+    - `tests/postman/local.postman_environment.json`
+  - **Service Ports**: Membership: 7071 | Events: 7072 | Scheduling: 7073 | Bar: 7074 | Notifications: 7075 | API Gateway: 7076
+  - **Documentation**: `scripts/README.md` with quick start, debugging workflows, troubleshooting
+  - **Test Results**: 100% pass rate (17 requests, 32 assertions, 0 failures)
+  - **Execution Modes**: Full automation (default), keep-running, skip-start
 
 ### 🟡 Complexity Concerns
 - **Database sharing**: Using single Azure SQL Database (serverless) with schema isolation instead of 6 separate databases for cost optimization
