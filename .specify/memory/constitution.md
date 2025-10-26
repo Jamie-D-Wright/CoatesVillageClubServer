@@ -1,43 +1,43 @@
 # Coates Village Club Server Constitution
 
 <!--
-Version Change: 2.2.1 → 2.3.0 (Minor Update)
+Version Change: 2.4.0 → 2.5.0 (Minor Update)
 
 MINOR changes:
-- Added new Principle IX: Local-First Development (NON-NEGOTIABLE)
-- Updated Development Process to require local testing before Azure deployment
-- Added local development metrics to Quality Metrics section
+- Added new Principle XI: Automated E2E Test Infrastructure (MANDATORY)
+- Establishes mandatory E2E test workflow for all services
 
 Added sections:
-- Principle IX: Local-First Development - requires all features to be fully testable locally
-  using emulators, containerized services, and local testing tools before any Azure deployment
-
-Modified sections:
-- Development Process: Added local testing verification steps before deployment
-- Quality Metrics: Added Local Development Metrics section
-
-Rationale:
-Current development workflow requires publishing to Azure for every test cycle, which is
-inefficient, slow, and costly. Local-first development accelerates the development cycle,
-reduces cloud costs, and enables reliable debugging. Developers must be able to run the
-entire system locally using Azure emulators (Azurite, Functions Core Tools), containerized
-databases (SQL Server in Docker), and local testing tools. This principle ensures rapid
-iteration and quality validation before deployment.
+- Principle XI: Automated E2E Test Infrastructure - mandates standardized E2E testing
+  workflow with automated service lifecycle management, Postman/Newman-based tests,
+  and background job management for non-blocking test execution
 
 Benefits:
-- Faster development cycle (seconds vs. minutes for feedback)
-- No cloud costs during development
-- Reliable debugging with full access to logs and state
-- Offline development capability
-- Reduced risk of breaking shared Azure resources
-- Easier onboarding for new developers
+- Consistent E2E testing approach across all microservices
+- Automated service startup/shutdown reduces manual steps
+- Background job management enables parallel development workflows
+- Comprehensive test coverage ensures API contract compliance
+- Faster feedback loops during development
+- Reliable testing without manual intervention
+
+Rationale:
+After implementing the membership service E2E test workflow, we identified key patterns
+that MUST be replicated for all services:
+- Automated service lifecycle management (start → test → stop)
+- PowerShell background jobs for non-blocking service execution
+- Newman/Postman integration for HTTP API testing
+- Comprehensive logging and debugging capabilities
+- Flexible test execution modes (full automation, keep-running, skip-start)
 
 Templates requiring updates:
 ✅ Updated: Constitution file
 ⚠️  Review needed: plan-template.md, spec-template.md, tasks-template.md
-    (ensure local testing guidance is included in development workflows)
+    (ensure E2E test requirements are included in service development plans)
 
-Follow-up TODOs: None
+Follow-up TODOs:
+- Create E2E test workflow templates for new services
+- Document E2E test script patterns in service README templates
+- Add E2E test checklist to plan-template.md
 -->
 
 
@@ -305,7 +305,76 @@ Service boundaries MUST be respected to maintain system integrity:
 
 Rationale: Clear service boundaries prevent coupling, enable independent evolution, and maintain system modularity. This principle ensures each service can be developed, tested, and deployed without breaking others.
 
-### VII. Microservices Architecture
+### VII. API and Data Format Standards
+All services MUST follow consistent API design and data formatting conventions:
+
+**JSON Serialization Standards (MANDATORY)**:
+- JSON property names MUST use camelCase (e.g., `firstName`, `userId`, `createdAt`)
+- ALL services MUST configure System.Text.Json with `JsonNamingPolicy.CamelCase`
+- ALL HTTP responses MUST serialize with camelCase property names
+- ALL HTTP requests MUST deserialize with camelCase property names
+- Configuration example (Azure Functions):
+  ```csharp
+  services.Configure<JsonSerializerOptions>(options =>
+  {
+      options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+  });
+  ```
+- Custom serializers MUST respect camelCase convention
+- Error responses MUST follow camelCase (e.g., `{ "error": "...", "code": "..." }`)
+
+**Error Response Format (MANDATORY)**:
+All error responses MUST follow this structure:
+```json
+{
+  "error": "Human-readable error message",
+  "code": "MACHINE_READABLE_ERROR_CODE",
+  "validationErrors": {
+    "fieldName": ["Error message 1", "Error message 2"]
+  }
+}
+```
+- `error` field: REQUIRED - Human-readable description
+- `code` field: REQUIRED - Machine-readable error code (UPPER_SNAKE_CASE)
+- `validationErrors` field: OPTIONAL - Only present for validation failures (HTTP 400)
+- Error codes MUST be defined in `libs/contracts/` for cross-service consistency
+- Common error codes:
+  - `VALIDATION_ERROR` - Request validation failed (HTTP 400)
+  - `NOT_FOUND` - Resource not found (HTTP 404)
+  - `UNAUTHORIZED` - Authentication required (HTTP 401)
+  - `FORBIDDEN` - Insufficient permissions (HTTP 403)
+  - `INTERNAL_ERROR` - Server error (HTTP 500)
+  - `BAD_REQUEST` - Malformed request (HTTP 400)
+
+**HTTP Status Code Standards**:
+- `200 OK` - Successful GET, PUT operations with response body
+- `201 Created` - Successful POST creating new resource
+- `204 No Content` - Successful operation with no response body (DELETE, some PUT/POST)
+- `400 Bad Request` - Validation errors, malformed requests
+- `401 Unauthorized` - Missing or invalid authentication
+- `403 Forbidden` - Valid authentication, insufficient permissions
+- `404 Not Found` - Resource does not exist
+- `500 Internal Server Error` - Unexpected server errors
+
+**API Versioning**:
+- All API endpoints MUST include version in path (e.g., `/api/v1/users`)
+- Breaking changes MUST increment major version (v1 → v2)
+- Non-breaking changes MAY use same version
+- Old versions MUST be supported for at least 6 months after deprecation notice
+
+**Content-Type Headers**:
+- All JSON responses MUST include `Content-Type: application/json; charset=utf-8`
+- Clients MUST send `Content-Type: application/json` for JSON payloads
+
+**Consistency Requirements**:
+- Use ErrorResponse DTO for all error responses (defined in `libs/contracts/`)
+- Do NOT use anonymous objects for error responses
+- Do NOT mix PascalCase and camelCase within same service
+- Do NOT use different error formats across endpoints
+
+Rationale: Consistent JSON casing and error formats ensure predictable API behavior across all services, improve developer experience, enable reliable client-side error handling, and prevent confusion when services are consumed by frontend applications or external integrations. CamelCase is the standard convention for JSON APIs and aligns with JavaScript/TypeScript frontend expectations.
+
+### VIII. Microservices Architecture
 The monorepo MUST support independent microservice lifecycle:
 - Each service in `services/` MUST have its own `src/` and `Dockerfile`
 - Services MUST be independently deployable to Azure Functions or containers
@@ -317,7 +386,7 @@ The monorepo MUST support independent microservice lifecycle:
 
 Rationale: Independent deployability enables faster iteration, reduces blast radius of changes, and allows horizontal scaling of individual services based on load patterns.
 
-### VIII. Library-First Development (NON-NEGOTIABLE)
+### IX. Library-First Development (NON-NEGOTIABLE)
 Every feature MUST begin as a standalone library before application integration:
 
 **Library Extraction Requirements**:
@@ -345,7 +414,7 @@ Every feature MUST begin as a standalone library before application integration:
 
 Rationale: Library-first development ensures reusability, prevents tight coupling between features and application code, promotes better architecture through clear interface design, and enables testing features in isolation before service integration. This approach makes code more maintainable and reduces duplication across services.
 
-### IX. Local-First Development (NON-NEGOTIABLE)
+### X. Local-First Development (NON-NEGOTIABLE)
 All features MUST be fully testable locally before deployment to Azure:
 
 **Local Development Environment Requirements**:
@@ -395,6 +464,103 @@ All features MUST be fully testable locally before deployment to Azure:
 
 Rationale: Local-first development dramatically accelerates the development cycle, reduces cloud costs, and provides reliable debugging capabilities. Requiring Azure deployment for every test creates a slow, expensive, and frustrating workflow. Local emulators and containerized services provide a production-like environment without cloud dependencies, enabling rapid iteration and confident deployment.
 
+### XI. Automated E2E Test Infrastructure (NON-NEGOTIABLE)
+All services MUST implement automated end-to-end test infrastructure with standardized workflow:
+
+**E2E Test Script Requirements (MANDATORY)**:
+Each service MUST provide the following scripts in the `scripts/` directory:
+- `test-e2e.ps1` - Complete automated test workflow (start → test → stop)
+- `start-<service>-service.ps1` - Start service as PowerShell background job
+- `stop-<service>-service.ps1` - Stop service and clean up background jobs
+- `run-e2e-tests.ps1` - Execute Newman/Postman test collection
+- `view-service-logs.ps1` - Query and display service logs from background jobs
+- `debug-service.ps1` - Multi-purpose debugging tool (status, health, jobs, processes)
+
+**Test Workflow Automation (MANDATORY)**:
+The `test-e2e.ps1` script MUST implement this workflow:
+1. **Service Startup**: Start service as PowerShell background job (non-blocking)
+2. **Health Verification**: Confirm service responds on designated port
+3. **Test Execution**: Run Newman against Postman collection with local environment
+4. **Service Shutdown**: Stop background job and terminate processes
+5. **Result Reporting**: Clear pass/fail indication with exit codes
+
+**Background Job Management (MANDATORY)**:
+- Services MUST run as PowerShell background jobs, NOT foreground processes
+- Background jobs enable non-blocking execution and log capture
+- Job IDs MUST be tracked and communicated to user for manual inspection
+- All service output MUST be captured via `Receive-Job` for debugging
+- Jobs MUST be properly cleaned up on script exit (normal or error)
+
+**Test Execution Modes (MANDATORY)**:
+Scripts MUST support these execution modes:
+- **Full Automation** (default): Start service → run tests → stop service
+- **Keep Running** (`-KeepServiceRunning`): Start → test → keep service for debugging
+- **Skip Start** (`-SkipServiceStart`): Use existing service for faster test iterations
+
+**Postman Collection Standards (MANDATORY)**:
+- Collections MUST be stored in `tests/postman/<service>-service.postman_collection.json`
+- Environment files MUST be in `tests/postman/local.postman_environment.json`
+- Collections MUST test all critical API endpoints (health, auth, CRUD operations)
+- Collections MUST validate HTTP status codes, response structure, and business logic
+- Collections MUST include negative test cases (validation errors, auth failures)
+
+**Logging and Debugging Requirements (MANDATORY)**:
+- Services MUST log to console (captured by background job)
+- Logs MUST be queryable via `view-service-logs.ps1` with options:
+  - View all logs
+  - Tail last N lines
+  - Follow logs in real-time
+  - Filter by specific job ID
+- Debug script MUST provide:
+  - Status check (jobs, processes, port listeners)
+  - Health endpoint verification
+  - Job listing with details
+  - Process information
+
+**Test Output Standards (MANDATORY)**:
+- Test scripts MUST provide clear visual feedback:
+  - Progress indicators for each phase (e.g., [1/3], [2/3], [3/3])
+  - Color-coded status messages (Yellow=info, Green=success, Red=error)
+  - Summary statistics from Newman (requests, assertions, pass/fail counts)
+  - Exit code 0 for success, non-zero for failures
+- Test failures MUST display:
+  - Which requests failed
+  - Assertion failures with details
+  - HTTP status codes received vs expected
+
+**E2E Test Documentation (MANDATORY)**:
+Each service MUST document in `scripts/README.md`:
+- Quick start guide for running E2E tests
+- Description of each script and its purpose
+- Common debugging workflows (check status, view logs, test health)
+- Advanced usage examples (keep-running, skip-start modes)
+- Troubleshooting guide for common issues
+
+**Integration with CI/CD (MANDATORY)**:
+- E2E test scripts MUST be executable in CI/CD pipelines
+- Tests MUST run against local services (no cloud dependencies for CI)
+- Test failures MUST fail the build with clear error messages
+- Test execution time MUST be tracked and optimized
+
+**Service Port Standards**:
+- Each service MUST use a unique port for local testing:
+  - Membership Service: 7071
+  - Events Service: 7072
+  - Scheduling Service: 7073
+  - Bar Service: 7074
+  - Notifications Service: 7075
+  - API Gateway: 7076
+- Ports MUST be consistent across all scripts and documentation
+
+**Script Maintenance Requirements**:
+- Scripts MUST use UTF-8 encoding without BOM
+- Scripts MUST handle errors gracefully with informative messages
+- Scripts MUST validate prerequisites (Newman installed, service built, etc.)
+- Scripts MUST be idempotent (safe to run multiple times)
+- Scripts MUST clean up resources on failure (stop jobs, kill processes)
+
+Rationale: Standardized E2E test infrastructure ensures every service has reliable, automated testing with consistent developer experience. Background job management enables non-blocking test execution, allowing developers to continue work while tests run. Comprehensive logging and debugging tools reduce troubleshooting time. Flexible execution modes support both automated CI/CD and interactive debugging workflows. This infrastructure prevents manual testing errors, catches integration issues early, and ensures all services maintain API contract compliance.
+
 ## Quality Metrics
 The following metrics MUST be tracked and maintained:
 
@@ -423,6 +589,8 @@ The following metrics MUST be tracked and maintained:
 - Performance Test Pass Rate: 100%
 - Test Execution Time: ≤10 minutes
 - Contract Test Pass Rate: 100% (for service interfaces)
+- E2E Test Script Coverage: 100% (all required scripts present and functional)
+- E2E Test Collection Coverage: 100% (all critical endpoints tested)
 
 ### Service-Level Metrics
 - Inter-service latency: P95 ≤50ms
@@ -465,6 +633,8 @@ The following metrics MUST be tracked and maintained:
 9. **Run and test locally (MANDATORY before Azure deployment)**:
    - Start local Azure Functions with `func start`
    - Run full local test suite (unit + integration + E2E)
+   - **Run automated E2E test workflow**: `.\scripts\test-e2e.ps1`
+   - Verify all E2E test scripts are functional and passing
    - Manually verify user flows using local endpoints (http://localhost:7071)
    - Test service-to-service interactions locally
    - Debug issues with full access to logs and breakpoints
@@ -540,4 +710,10 @@ All pull requests MUST verify compliance with these principles. Exceptions requi
 - Azure deployment is for environment validation, not primary development/testing
 - Violations of local-first development require explicit approval with documented justification
 
-**Version**: 2.3.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-25
+**API and Data Format Standards governance**:
+- All services MUST use camelCase for JSON serialization
+- All services MUST use ErrorResponse DTO for error responses
+- Breaking changes to error formats require version bump
+- API contract changes require review and documentation in libs/contracts/
+
+**Version**: 2.5.0 | **Ratified**: 2025-10-12 | **Last Amended**: 2025-10-26

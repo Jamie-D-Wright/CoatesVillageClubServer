@@ -127,6 +127,7 @@ Example:
 - Integration tests: [What will be tested with real dependencies]
 - Contract tests: [What contracts must be validated before implementation]
 - API tests: [Postman collection with test scenarios for endpoints, validation, error handling]
+- E2E tests: [Automated E2E test workflow - test-e2e.ps1 script, Newman test collection, all critical endpoints covered]
 
 **Framework Independence**: [Explain how library remains framework-agnostic or justify framework coupling]
 

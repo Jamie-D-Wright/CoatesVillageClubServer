@@ -134,11 +134,54 @@ description: "Task list template for feature implementation"
   - How to import collections into Postman Desktop
   - How to run specific folders or tests
   - How to generate HTML reports
-- [ ] T032 Test error handling and edge cases locally
-- [ ] T033 Test cross-service interactions locally (if applicable)
-- [ ] T034 Debug any issues with breakpoints and local logs
 
-**Checkpoint**: All local tests PASS (unit, integration, API via newman), manual verification complete, NO Azure deployment yet
+### E2E Test Automation (MANDATORY - Constitution Principle XI)
+- [ ] T032 Create `scripts/test-e2e.ps1` - Complete automated test workflow
+  - Implement service startup as background job
+  - Add health check verification
+  - Execute newman test collection
+  - Implement service shutdown and cleanup
+  - Support -KeepServiceRunning and -SkipServiceStart flags
+- [ ] T033 Create `scripts/start-[service]-service.ps1` - Start service as PowerShell background job
+  - Build service before starting
+  - Start func.exe in background job
+  - Wait for service initialization
+  - Verify service health endpoint
+  - Output job ID for tracking
+- [ ] T034 Create `scripts/stop-[service]-service.ps1` - Stop service and clean up
+  - Stop PowerShell background job
+  - Terminate func processes
+  - Clean up resources
+- [ ] T035 Create `scripts/run-e2e-tests.ps1` - Execute Newman test collection
+  - Change to project root directory
+  - Run newman with collection and environment
+  - Report pass/fail status with exit codes
+- [ ] T036 Create `scripts/view-service-logs.ps1` - Query service logs from background jobs
+  - Support viewing all logs
+  - Support tail mode (last N lines)
+  - Support follow mode (real-time)
+  - Support filtering by job ID
+- [ ] T037 Create `scripts/debug-service.ps1` - Multi-purpose debugging tool
+  - Implement status check (jobs, processes, ports)
+  - Implement health endpoint test
+  - Implement job listing
+  - Implement process listing
+- [ ] T038 Create `scripts/README.md` documenting:
+  - Quick start guide (.\scripts\test-e2e.ps1)
+  - Script descriptions and usage
+  - Debugging workflows
+  - Advanced options (keep-running, skip-start)
+  - Troubleshooting guide
+- [ ] T039 Test E2E automation workflow end-to-end
+- [ ] T040 Verify all E2E scripts use UTF-8 encoding without BOM
+- [ ] T041 Verify scripts handle errors gracefully with clear messages
+
+### Manual Local Verification
+- [ ] T042 Test error handling and edge cases locally
+- [ ] T043 Test cross-service interactions locally (if applicable)
+- [ ] T044 Debug any issues with breakpoints and local logs
+
+**Checkpoint**: All local tests PASS (unit, integration, E2E automation via test-e2e.ps1), manual verification complete, NO Azure deployment yet
 
 ---
 
