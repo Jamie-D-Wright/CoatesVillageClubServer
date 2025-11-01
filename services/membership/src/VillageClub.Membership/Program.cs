@@ -36,7 +36,7 @@ try
     Log.Information("Starting Village Club Membership Service");
 
     var host = new HostBuilder()
-        .ConfigureFunctionsWorkerDefaults(builder =>
+        .ConfigureFunctionsWebApplication(builder =>
         {
             // Register middleware in order: exception handling first, then authentication
             builder.UseMiddleware<ExceptionHandlingMiddleware>();
