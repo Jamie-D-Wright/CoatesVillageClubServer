@@ -386,7 +386,7 @@ curl -X POST https://apim-villageclub-prod.azure-api.net/membership/api/v1/auth/
 
 **Causes**:
 1. Backend service is down or not responding
-2. Cold start delay (Azure Functions consumption plan)
+2. Cold start delay (Azure Functions Flex Consumption Plan)
 3. Database connection issues
 
 **Solutions**:

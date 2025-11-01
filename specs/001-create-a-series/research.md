@@ -12,10 +12,10 @@ This document consolidates research findings for implementing a microservices-ba
 
 ## Decision 1: Azure Functions vs App Service vs Container Apps
 
-**Decision**: Azure Functions Consumption Plan for all services
+**Decision**: Azure Functions Flex Consumption Plan for all services
 
 **Rationale**:
-- **Cost Profile**: Consumption plan charges per execution (~$0.20 per million executions + $0.000016/GB-s memory). With estimated 50-100 users and peak usage only Fri/Sat evenings, monthly cost projected at $5-15 vs $150+ for App Service Basic tier
+- **Cost Profile**: Flex Consumption Plan charges per execution (~$0.20 per million executions + $0.000016/GB-s memory). With estimated 50-100 users and peak usage only Fri/Sat evenings, monthly cost projected at $5-15 vs $150+ for App Service Basic tier
 - **Scale-to-Zero**: Automatic scale to zero during idle periods (Mon-Thu, daytime) eliminates charges when club is closed
 - **Operational Simplicity**: Fully managed, no infrastructure management, automatic scaling
 - **Cold Start Mitigation**: Pre-warming via timer trigger during operating hours (7:45pm Fri/Sat) keeps functions warm when needed

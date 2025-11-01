@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "5593840457255865749"
+      "templateHash": "15437502887094429141"
     }
   },
   "parameters": {
@@ -77,18 +77,18 @@
     }
   },
   "variables": {
-    "membershipFunctionAppName": "[format('func-membership-{0}', parameters('environmentName'))]",
-    "appServicePlanName": "[format('plan-{0}', parameters('environmentName'))]",
-    "appInsightsName": "[format('insights-{0}', parameters('environmentName'))]",
-    "keyVaultName": "[format('vault-{0}', parameters('environmentName'))]",
-    "functionStorageAccountName": "[format('stfunc{0}', toLower(parameters('environmentName')))]",
-    "membershipStorageAccountName": "[format('stmembership{0}', toLower(parameters('environmentName')))]",
-    "eventsStorageAccountName": "[format('stevents{0}', toLower(parameters('environmentName')))]",
-    "shiftsStorageAccountName": "[format('stshifts{0}', toLower(parameters('environmentName')))]",
-    "stockStorageAccountName": "[format('ststock{0}', toLower(parameters('environmentName')))]",
-    "financeStorageAccountName": "[format('stfinance{0}', toLower(parameters('environmentName')))]",
-    "sqlServerName": "[format('sqlserver-{0}', parameters('environmentName'))]",
-    "apimName": "[format('apim-{0}', parameters('environmentName'))]"
+    "membershipFunctionAppName": "[format('cvc-func-membership-{0}', parameters('environmentName'))]",
+    "appServicePlanName": "[format('cvc-plan-{0}', parameters('environmentName'))]",
+    "appInsightsName": "[format('cvc-insights-{0}', parameters('environmentName'))]",
+    "keyVaultName": "[format('cvc-kv-{0}', parameters('environmentName'))]",
+    "functionStorageAccountName": "[format('cvcstfunc{0}', toLower(parameters('environmentName')))]",
+    "membershipStorageAccountName": "[format('cvcstmembership{0}', toLower(parameters('environmentName')))]",
+    "eventsStorageAccountName": "[format('cvcstevents{0}', toLower(parameters('environmentName')))]",
+    "shiftsStorageAccountName": "[format('cvcstshifts{0}', toLower(parameters('environmentName')))]",
+    "stockStorageAccountName": "[format('cvcststock{0}', toLower(parameters('environmentName')))]",
+    "financeStorageAccountName": "[format('cvcstfinance{0}', toLower(parameters('environmentName')))]",
+    "sqlServerName": "[format('cvc-sql-{0}', parameters('environmentName'))]",
+    "apimName": "[format('cvc-apim-{0}', parameters('environmentName'))]"
   },
   "resources": {
     "functionStorageAccount": {
@@ -107,12 +107,16 @@
     },
     "appServicePlan": {
       "type": "Microsoft.Web/serverfarms",
-      "apiVersion": "2022-03-01",
+      "apiVersion": "2023-12-01",
       "name": "[variables('appServicePlanName')]",
       "location": "[parameters('location')]",
+      "kind": "functionapp",
       "sku": {
-        "name": "Y1",
-        "tier": "Dynamic"
+        "name": "FC1",
+        "tier": "FlexConsumption"
+      },
+      "properties": {
+        "reserved": true
       }
     },
     "appInsights": {
@@ -150,6 +154,22 @@
       "apiVersion": "2022-03-01",
       "name": "[variables('membershipFunctionAppName')]",
       "dependsOn": [
+        "membershipFunctionApp"
+      ]
+    },
+    "functionAppStorageBlobContributor": {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', variables('functionStorageAccountName'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageAccountName')), resourceId('Microsoft.Web/sites', variables('membershipFunctionAppName')), 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+        "principalId": "[reference('functionApp', '2022-03-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "functionApp",
+        "functionStorageAccount",
         "membershipFunctionApp"
       ]
     },
@@ -263,7 +283,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "14067722768793913875"
+              "templateHash": "671798382010994701"
             }
           },
           "parameters": {
@@ -346,22 +366,41 @@
           "resources": [
             {
               "type": "Microsoft.Web/sites",
-              "apiVersion": "2023-01-01",
+              "apiVersion": "2023-12-01",
               "name": "[parameters('functionAppName')]",
               "location": "[parameters('location')]",
               "tags": "[parameters('tags')]",
-              "kind": "functionapp",
+              "kind": "functionapp,linux",
               "identity": {
                 "type": "SystemAssigned"
               },
               "properties": {
                 "serverFarmId": "[parameters('appServicePlanId')]",
+                "reserved": true,
                 "httpsOnly": true,
+                "functionAppConfig": {
+                  "deployment": {
+                    "storage": {
+                      "type": "blobContainer",
+                      "value": "[format('{0}deploymentpackage', reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').primaryEndpoints.blob)]",
+                      "authentication": {
+                        "type": "SystemAssignedIdentity"
+                      }
+                    }
+                  },
+                  "scaleAndConcurrency": {
+                    "maximumInstanceCount": 100,
+                    "instanceMemoryMB": 2048
+                  },
+                  "runtime": {
+                    "name": "dotnet-isolated",
+                    "version": "8.0"
+                  }
+                },
                 "siteConfig": {
-                  "netFrameworkVersion": "v8.0",
                   "ftpsState": "Disabled",
                   "minTlsVersion": "1.2",
-                  "appSettings": "[concat(createArray(createObject('name', 'AzureWebJobsStorage', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', parameters('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').keys[0].value)), createObject('name', 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', parameters('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').keys[0].value)), createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', parameters('appInsightsConnectionString')), createObject('name', 'FUNCTIONS_EXTENSION_VERSION', 'value', '~4'), createObject('name', 'FUNCTIONS_WORKER_RUNTIME', 'value', 'dotnet-isolated'), createObject('name', 'KeyVaultName', 'value', parameters('keyVaultName')), createObject('name', 'SqlConnection__Server', 'value', parameters('sqlServerFqdn')), createObject('name', 'SqlConnection__Database', 'value', parameters('databaseName')), createObject('name', 'SqlConnection__UserId', 'value', parameters('sqlAdminLogin')), createObject('name', 'SqlConnection__Password', 'value', parameters('sqlAdminPassword'))), parameters('additionalAppSettings'))]"
+                  "appSettings": "[concat(createArray(createObject('name', 'AzureWebJobsStorage__accountName', 'value', parameters('storageAccountName')), createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', parameters('appInsightsConnectionString')), createObject('name', 'FUNCTIONS_EXTENSION_VERSION', 'value', '~4'), createObject('name', 'FUNCTIONS_WORKER_RUNTIME', 'value', 'dotnet-isolated'), createObject('name', 'KeyVaultName', 'value', parameters('keyVaultName')), createObject('name', 'SqlConnection__Server', 'value', parameters('sqlServerFqdn')), createObject('name', 'SqlConnection__Database', 'value', parameters('databaseName')), createObject('name', 'SqlConnection__UserId', 'value', parameters('sqlAdminLogin')), createObject('name', 'SqlConnection__Password', 'value', parameters('sqlAdminPassword'))), parameters('additionalAppSettings'))]"
                 }
               }
             }
@@ -379,14 +418,14 @@
               "metadata": {
                 "description": "Function App Default Hostname"
               },
-              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-01-01').defaultHostName]"
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-12-01').defaultHostName]"
             },
             "functionAppPrincipalId": {
               "type": "string",
               "metadata": {
                 "description": "Function App Principal ID (Managed Identity)"
               },
-              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-01-01', 'full').identity.principalId]"
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-12-01', 'full').identity.principalId]"
             },
             "functionAppId": {
               "type": "string",
@@ -1826,7 +1865,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "12158923217062997458"
+              "templateHash": "16525272035805918133"
             }
           },
           "parameters": {
@@ -1936,12 +1975,11 @@
               "properties": {
                 "displayName": "Membership API",
                 "description": "User management, authentication, and authorization",
-                "path": "membership/api",
+                "path": "membership",
                 "protocols": [
                   "https"
                 ],
                 "subscriptionRequired": false,
-                "apiVersion": "v1",
                 "serviceUrl": "[parameters('membershipServiceUrl')]"
               },
               "dependsOn": [
@@ -1969,7 +2007,7 @@
               "properties": {
                 "displayName": "Health Check",
                 "method": "GET",
-                "urlTemplate": "/v1/health",
+                "urlTemplate": "/api/v1/health",
                 "description": "Check health status of Membership service",
                 "responses": [
                   {
@@ -2047,7 +2085,7 @@
               "apiVersion": "2023-05-01-preview",
               "name": "[format('{0}/{1}', parameters('apimName'), 'policy')]",
               "properties": {
-                "value": "<policies>\r\n  <inbound>\r\n    <cors allow-credentials=\"true\">\r\n      <allowed-origins>\r\n        <origin>http://localhost:3000</origin>\r\n        <origin>http://localhost:5173</origin>\r\n      </allowed-origins>\r\n      <allowed-methods>\r\n        <method>GET</method>\r\n        <method>POST</method>\r\n        <method>PUT</method>\r\n        <method>DELETE</method>\r\n        <method>OPTIONS</method>\r\n      </allowed-methods>\r\n      <allowed-headers>\r\n        <header>*</header>\r\n      </allowed-headers>\r\n      <expose-headers>\r\n        <header>*</header>\r\n      </expose-headers>\r\n    </cors>\r\n    <!-- JWT validation using public key from Membership service -->\r\n    <choose>\r\n      <when condition=\"@(context.Request.Url.Path.Contains(\"/registry/\") || context.Request.Url.Path.Contains(\"/health\") || context.Request.Url.Path.Contains(\"/auth/login\") || context.Request.Url.Path.Contains(\"/auth/register\"))\">\r\n        <!-- Skip JWT validation for public endpoints: service registry, health checks, login, register -->\r\n      </when>\r\n      <otherwise>\r\n        <!-- Validate JWT for protected endpoints -->\r\n        <validate-jwt header-name=\"Authorization\" failed-validation-httpcode=\"401\" failed-validation-error-message=\"Unauthorized. Valid JWT token required.\">\r\n          <openid-config url=\"{{membership-service-url}}/api/v1/health\" />\r\n          <audiences>\r\n            <audience>village-club-api</audience>\r\n          </audiences>\r\n          <issuers>\r\n            <issuer>village-club-membership</issuer>\r\n          </issuers>\r\n          <required-claims>\r\n            <claim name=\"sub\" match=\"any\">\r\n              <value>@(context.Request.Headers.GetValueOrDefault(\"Authorization\",\"\").Split(' ').Last())</value>\r\n            </claim>\r\n          </required-claims>\r\n        </validate-jwt>\r\n      </otherwise>\r\n    </choose>\r\n  </inbound>\r\n  <backend>\r\n    <forward-request />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <set-header name=\"Content-Type\" exists-action=\"override\">\r\n      <value>application/json</value>\r\n    </set-header>\r\n    <set-body>@{\r\n      return new JObject(\r\n        new JProperty(\"message\", context.LastError.Message),\r\n        new JProperty(\"code\", \"GATEWAY_ERROR\"),\r\n        new JProperty(\"timestamp\", DateTime.UtcNow.ToString(\"o\"))\r\n      ).ToString();\r\n    }</set-body>\r\n  </on-error>\r\n</policies>\r\n",
+                "value": "<policies>\r\n  <inbound>\r\n    <cors allow-credentials=\"true\">\r\n      <allowed-origins>\r\n        <origin>http://localhost:3000</origin>\r\n        <origin>http://localhost:5173</origin>\r\n      </allowed-origins>\r\n      <allowed-methods>\r\n        <method>GET</method>\r\n        <method>POST</method>\r\n        <method>PUT</method>\r\n        <method>DELETE</method>\r\n        <method>OPTIONS</method>\r\n      </allowed-methods>\r\n      <allowed-headers>\r\n        <header>*</header>\r\n      </allowed-headers>\r\n      <expose-headers>\r\n        <header>*</header>\r\n      </expose-headers>\r\n    </cors>\r\n  </inbound>\r\n  <backend>\r\n    <forward-request />\r\n  </backend>\r\n  <outbound>\r\n  </outbound>\r\n  <on-error>\r\n    <set-header name=\"Content-Type\" exists-action=\"override\">\r\n      <value>application/json</value>\r\n    </set-header>\r\n    <set-body>@{\r\n      return new JObject(\r\n        new JProperty(\"message\", context.LastError.Message),\r\n        new JProperty(\"code\", \"GATEWAY_ERROR\"),\r\n        new JProperty(\"timestamp\", DateTime.UtcNow.ToString(\"o\"))\r\n      ).ToString();\r\n    }</set-body>\r\n  </on-error>\r\n</policies>\r\n",
                 "format": "xml"
               },
               "dependsOn": [

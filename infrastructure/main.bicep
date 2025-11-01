@@ -33,7 +33,7 @@ param jwtRefreshTokenExpiryDays int = 30
 // Storage accounts: cvcst{component}{env} (no hyphens, max 24 chars, lowercase only)
 
 var membershipFunctionAppName = 'cvc-func-membership-${environmentName}'
-var appServicePlanName = 'cvc-plan-${environmentName}'
+var appServicePlanName = 'cvc-plan-flex-${environmentName}'  // New plan name for Flex Consumption
 var appInsightsName = 'cvc-insights-${environmentName}'
 var keyVaultName = 'cvc-kv-${environmentName}'  // cvc-kv-dev (max 24)
 var functionStorageAccountName = 'cvcstfunc${toLower(environmentName)}'  // cvcstfuncdev (12 chars)
@@ -59,13 +59,13 @@ resource functionStorageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' =
   }
 }
 
-resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
+resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: appServicePlanName
   location: location
-  kind: 'linux'
+  kind: 'functionapp'
   sku: {
-    name: 'Y1'
-    tier: 'Dynamic'
+    name: 'FC1'
+    tier: 'FlexConsumption'
   }
   properties: {
     reserved: true  // Required for Linux
@@ -138,10 +138,6 @@ module membershipFunctionApp 'modules/function-app.bicep' = {
         name: 'ServiceSettings__EnvironmentName'
         value: environmentName
       }
-      {
-        name: 'WEBSITE_RUN_FROM_PACKAGE'
-        value: '1'
-      }
     ]
     tags: {
       Environment: environmentName
@@ -156,6 +152,18 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' existing = {
   dependsOn: [
     membershipFunctionApp
   ]
+}
+
+// Grant the Function App managed identity Storage Blob Data Contributor role on the function storage account
+// Required for Flex Consumption Plan deployment package access
+resource functionAppStorageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(functionStorageAccount.id, functionApp.id, 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+  scope: functionStorageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') // Storage Blob Data Contributor
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
 }
 
 // SQL Database Module

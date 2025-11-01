@@ -13,7 +13,7 @@
 **File**: `research.md` (15,500+ words)
 
 Resolved all technical unknowns:
-- **Compute Platform**: Azure Functions Consumption Plan (cost-optimized, scale-to-zero)
+- **Compute Platform**: Azure Functions Flex Consumption Plan (cost-optimized, scale-to-zero)
 - **Database**: Azure SQL Serverless with schema isolation per service
 - **Authentication**: JWT tokens issued by Membership service, validated at API Gateway
 - **Storage**: Azure Blob Storage with Hot/Cool tier lifecycle policies
@@ -91,7 +91,7 @@ Complete local setup guide:
    - **Justification**: Cost optimization ($15/month vs $300/month)
    - **Mitigation**: Schema isolation maintains logical boundaries, migration path documented
 
-2. **Cold Start Latency**: Consumption Plan may breach <2s on first request after idle
+2. **Cold Start Latency**: Flex Consumption Plan may breach <2s on first request after idle
    - **Justification**: Pay-per-execution aligns with "low usage and cost efficiency" requirement
    - **Mitigation**: Pre-warming during peak hours (Fri/Sat 8pm-12am)
 
@@ -142,7 +142,7 @@ tests/
 ### Performance
 - API response time: **<2 seconds** (95th percentile)
 - Concurrent users: **50** (with 10x load testing = 500)
-- Cold start target: **<5 seconds** (Consumption Plan)
+- Cold start target: **<5 seconds** (Flex Consumption Plan)
 
 ### Cost
 - **Target: <$50/month** for low-traffic operation

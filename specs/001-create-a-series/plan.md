@@ -33,7 +33,7 @@ Build a complete microservices-based system for village club management supporti
 - Azure Functions local runtime for E2E testing
 
 **Target Platform**: 
-- Azure Functions Consumption Plan (pay-per-execution, auto-scale to zero)
+- Azure Functions Flex Consumption Plan (pay-per-execution, auto-scale to zero)
 - Azure API Management Consumption Tier (pay-per-call)
 - Deployed to Azure UK South region
 
@@ -42,7 +42,7 @@ Build a complete microservices-based system for village club management supporti
 **Performance Goals**: 
 - API response time <2s (95th percentile) per spec
 - Handle 50 concurrent users per spec
-- Cold start <5s for consumption plan functions
+- Cold start <5s for Flex Consumption Plan functions
 
 **Constraints**: 
 - Serverless-first: Minimize always-on resources
@@ -172,7 +172,7 @@ Build a complete microservices-based system for village club management supporti
   - **Justification**: At this scale (50-100 users, low traffic), separate databases would cost ~$300/month vs $15/month for shared serverless DB. Constitution principle of service boundaries maintained via schema isolation.
   - **Alternative rejected**: 6 separate databases - cost prohibitive for stated "low usage and cost efficiency" requirement
   
-- **Consumption Plan limitations**: Cold start latency (3-5s) may occasionally breach <2s target on first request after idle period
+- **Flex Consumption Plan limitations**: Cold start latency (2-4s) may occasionally breach <2s target on first request after idle period
   - **Justification**: Acceptable tradeoff for cost savings (~$0 when idle vs $150+/month for always-on App Service)
   - **Mitigation**: Pre-warming via scheduled ping during peak hours (Fri/Sat 7:45pm-12:15am)
   - **Alternative rejected**: Premium Functions Plan - costs $200+/month, not aligned with cost efficiency requirement
@@ -359,7 +359,7 @@ Microservices monorepo with 5 domain services (Membership, Events, Scheduling, B
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
 | Shared Azure SQL Database (violates strict service boundary principle of "no shared databases") | Cost optimization for low-traffic scenario: Single serverless Azure SQL DB costs ~$15/month vs 5 separate databases at ~$300/month | Separate databases per service would exceed budget constraints for "low usage and cost efficiency" requirement. Schema isolation maintains logical boundaries and prevents cross-service queries. Migration to separate DBs possible if traffic/budget increases. |
-| Consumption Plan cold starts (may violate <2s response time for first request after idle) | Pay-per-execution model costs ~$0 when idle vs $150-200/month for Premium/App Service plans | Always-on hosting contradicts "low usage and cost efficiency" requirement. Cold start mitigated by pre-warming during peak hours (Fri/Sat evenings). Users expecting social club responsiveness, not sub-second SLA. |
+| Flex Consumption Plan cold starts (may violate <2s response time for first request after idle) | Pay-per-execution model costs ~$0 when idle vs $150-200/month for Premium/App Service plans | Always-on hosting contradicts "low usage and cost efficiency" requirement. Cold start mitigated by pre-warming during peak hours (Fri/Sat evenings). Users expecting social club responsiveness, not sub-second SLA. |
 
 ---
 
@@ -367,7 +367,7 @@ Microservices monorepo with 5 domain services (Membership, Events, Scheduling, B
 
 All technical unknowns have been resolved and documented in `research.md`:
 
-- ✅ Compute platform: Azure Functions Consumption Plan
+- ✅ Compute platform: Azure Functions Flex Consumption Plan
 - ✅ Database strategy: Azure SQL Serverless with schema isolation
 - ✅ Authentication: JWT tokens issued by Membership service, validated at API Gateway
 - ✅ File storage: Azure Blob Storage with lifecycle policies
@@ -507,7 +507,7 @@ Phase 2 is executed via the `/speckit.tasks` command and will generate `tasks.md
 ### Technical Summary
 
 - **Architecture**: Microservices monorepo, 5 domain services + API Gateway
-- **Compute**: Azure Functions (Consumption Plan, .NET 8 isolated)
+- **Compute**: Azure Functions (Flex Consumption Plan, .NET 8 isolated)
 - **Database**: Azure SQL Serverless with schema isolation
 - **Storage**: Azure Blob Storage (Hot/Cool tiers)
 - **Auth**: JWT tokens (issued by Membership, validated at APIM)

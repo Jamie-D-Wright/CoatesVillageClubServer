@@ -59,7 +59,7 @@
 **Function App**: `cvc-func-membership-dev`  
 **Base URL**: `https://cvc-func-membership-dev.azurewebsites.net`  
 **Resource Group**: `rg-villageclub-dev`  
-**Runtime**: .NET 8 Isolated Worker (Linux Consumption Plan)
+**Runtime**: .NET 8 Isolated Worker (Flex Consumption Plan)
 
 #### API Endpoints
 

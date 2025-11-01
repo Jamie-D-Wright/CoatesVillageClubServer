@@ -1,8 +1,8 @@
 # Local Development Environment Setup
 
 **Project**: Village Club Management Microservices  
-**Last Updated**: 2025-10-25  
-**Target Platform**: .NET 8 Azure Functions (Isolated Worker Model)
+**Last Updated**: 2025-11-01  
+**Target Platform**: .NET 8 Azure Functions (Isolated Worker Model, Flex Consumption Plan)
 
 ## Overview
 

@@ -150,7 +150,7 @@ az functionapp config appsettings list --name cvc-func-membership-dev \
 
 az functionapp config appsettings set --name cvc-func-membership-dev \
 
-  --resource-group rg-villageclub-dev \**Result**: Both local and Azure now use `/api/v1/*` routes consistently.1. âœ… **AuthorizationLevel.Anonymous works on Linux Consumption Plan**
+  --resource-group rg-villageclub-dev \**Result**: Both local and Azure now use `/api/v1/*` routes consistently.1. ✅ **AuthorizationLevel.Anonymous works on Flex Consumption Plan**
 
   --settings "JWT_PRIVATE_KEY=<your-private-key>"
 
@@ -265,7 +265,7 @@ Body: {"accessToken":"...","refreshToken":"...","user":{...}}   - Middleware cor
 
 ```
 
-1. **AuthorizationLevel.Anonymous** on Linux Consumption PlanHealth:     GET  https://cvc-func-membership-dev.azurewebsites.net/api/health
+1. **AuthorizationLevel.Anonymous** on Flex Consumption PlanHealth:     GET  https://cvc-func-membership-dev.azurewebsites.net/api/health
 
 2. **All 17 functions** deployed and mappedRegister:   POST https://cvc-func-membership-dev.azurewebsites.net/api/auth/register
 

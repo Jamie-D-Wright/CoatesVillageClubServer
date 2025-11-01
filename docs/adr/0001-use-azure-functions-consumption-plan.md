@@ -1,7 +1,15 @@
 # ADR 0001: Use Azure Functions Consumption Plan for Microservices
 
+> **⚠️ SUPERSEDED**: This ADR has been superseded by **ADR 0004: Migrate from Linux Consumption to Flex Consumption Plan** (2025-11-01).
+> 
+> **Reason**: Microsoft is retiring the Linux Consumption Plan (Y1 SKU) in favor of the new Flex Consumption Plan (FC1 SKU). All microservices have been migrated to Flex Consumption Plan.
+> 
+> **See**: [ADR 0004](./0004-migrate-to-flex-consumption-plan.md) for current platform decision and migration details.
+
+---
+
 **Date**: 2025-10-18  
-**Status**: Accepted  
+**Status**: ~~Accepted~~ **Superseded** (2025-11-01)  
 **Feature**: 001-create-a-series  
 **Deciders**: Technical Architecture Team
 

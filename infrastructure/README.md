@@ -7,7 +7,7 @@ This directory contains the Azure infrastructure as code (IaC) using Bicep templ
 The infrastructure deploys the following Azure resources:
 
 ### Core Services
-- **Azure Functions (Consumption Plan)** - Serverless compute for microservices
+- **Azure Functions (Flex Consumption Plan)** - Serverless compute for microservices
   - Membership service
   - Events service (Phase 5)
   - Finance service (Phase 6)
