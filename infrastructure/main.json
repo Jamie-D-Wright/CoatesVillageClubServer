@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "15437502887094429141"
+      "templateHash": "16640601167188157720"
     }
   },
   "parameters": {
@@ -78,7 +78,8 @@
   },
   "variables": {
     "membershipFunctionAppName": "[format('cvc-func-membership-{0}', parameters('environmentName'))]",
-    "appServicePlanName": "[format('cvc-plan-{0}', parameters('environmentName'))]",
+    "eventsFunctionAppName": "[format('cvc-func-events-{0}', parameters('environmentName'))]",
+    "appServicePlanName": "[format('cvc-plan-flex-{0}', parameters('environmentName'))]",
     "appInsightsName": "[format('cvc-insights-{0}', parameters('environmentName'))]",
     "keyVaultName": "[format('cvc-kv-{0}', parameters('environmentName'))]",
     "functionStorageAccountName": "[format('cvcstfunc{0}', toLower(parameters('environmentName')))]",
@@ -173,6 +174,31 @@
         "membershipFunctionApp"
       ]
     },
+    "eventsFunctionAppResource": {
+      "existing": true,
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-03-01",
+      "name": "[variables('eventsFunctionAppName')]",
+      "dependsOn": [
+        "eventsFunctionApp"
+      ]
+    },
+    "eventsFunctionAppStorageBlobContributor": {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', variables('functionStorageAccountName'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageAccountName')), resourceId('Microsoft.Web/sites', variables('eventsFunctionAppName')), 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+        "principalId": "[reference('eventsFunctionAppResource', '2022-03-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "eventsFunctionApp",
+        "eventsFunctionAppResource",
+        "functionStorageAccount"
+      ]
+    },
     "keyVaultAccessPolicy": {
       "type": "Microsoft.KeyVault/vaults/accessPolicies",
       "apiVersion": "2022-07-01",
@@ -188,10 +214,21 @@
                 "list"
               ]
             }
+          },
+          {
+            "objectId": "[reference('eventsFunctionAppResource', '2022-03-01', 'full').identity.principalId]",
+            "tenantId": "[subscription().tenantId]",
+            "permissions": {
+              "secrets": [
+                "get",
+                "list"
+              ]
+            }
           }
         ]
       },
       "dependsOn": [
+        "eventsFunctionAppResource",
         "functionApp",
         "keyVault"
       ]
@@ -261,10 +298,6 @@
               {
                 "name": "ServiceSettings__EnvironmentName",
                 "value": "[parameters('environmentName')]"
-              },
-              {
-                "name": "WEBSITE_RUN_FROM_PACKAGE",
-                "value": "1"
               }
             ]
           },
@@ -283,7 +316,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "671798382010994701"
+              "templateHash": "336116800008310393"
             }
           },
           "parameters": {
@@ -400,7 +433,252 @@
                 "siteConfig": {
                   "ftpsState": "Disabled",
                   "minTlsVersion": "1.2",
-                  "appSettings": "[concat(createArray(createObject('name', 'AzureWebJobsStorage__accountName', 'value', parameters('storageAccountName')), createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', parameters('appInsightsConnectionString')), createObject('name', 'FUNCTIONS_EXTENSION_VERSION', 'value', '~4'), createObject('name', 'FUNCTIONS_WORKER_RUNTIME', 'value', 'dotnet-isolated'), createObject('name', 'KeyVaultName', 'value', parameters('keyVaultName')), createObject('name', 'SqlConnection__Server', 'value', parameters('sqlServerFqdn')), createObject('name', 'SqlConnection__Database', 'value', parameters('databaseName')), createObject('name', 'SqlConnection__UserId', 'value', parameters('sqlAdminLogin')), createObject('name', 'SqlConnection__Password', 'value', parameters('sqlAdminPassword'))), parameters('additionalAppSettings'))]"
+                  "appSettings": "[concat(createArray(createObject('name', 'AzureWebJobsStorage__accountName', 'value', parameters('storageAccountName')), createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', parameters('appInsightsConnectionString')), createObject('name', 'FUNCTIONS_EXTENSION_VERSION', 'value', '~4'), createObject('name', 'KeyVaultName', 'value', parameters('keyVaultName')), createObject('name', 'SqlConnection__Server', 'value', parameters('sqlServerFqdn')), createObject('name', 'SqlConnection__Database', 'value', parameters('databaseName')), createObject('name', 'SqlConnection__UserId', 'value', parameters('sqlAdminLogin')), createObject('name', 'SqlConnection__Password', 'value', parameters('sqlAdminPassword'))), parameters('additionalAppSettings'))]"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "functionAppName": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App Name"
+              },
+              "value": "[parameters('functionAppName')]"
+            },
+            "functionAppHostname": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App Default Hostname"
+              },
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-12-01').defaultHostName]"
+            },
+            "functionAppPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App Principal ID (Managed Identity)"
+              },
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2023-12-01', 'full').identity.principalId]"
+            },
+            "functionAppId": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App Resource ID"
+              },
+              "value": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "appInsights",
+        "appServicePlan",
+        "functionStorageAccount",
+        "keyVault",
+        "sqlDatabase"
+      ]
+    },
+    "eventsFunctionApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "eventsFunctionApp",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "functionAppName": {
+            "value": "[variables('eventsFunctionAppName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "appServicePlanId": {
+            "value": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
+          },
+          "storageAccountName": {
+            "value": "[variables('functionStorageAccountName')]"
+          },
+          "appInsightsConnectionString": {
+            "value": "[reference('appInsights').ConnectionString]"
+          },
+          "keyVaultName": {
+            "value": "[variables('keyVaultName')]"
+          },
+          "sqlServerFqdn": {
+            "value": "[reference('sqlDatabase').outputs.sqlServerFqdn.value]"
+          },
+          "databaseName": {
+            "value": "[reference('sqlDatabase').outputs.databaseName.value]"
+          },
+          "sqlAdminLogin": {
+            "value": "[parameters('sqlAdminLogin')]"
+          },
+          "sqlAdminPassword": {
+            "value": "[parameters('sqlAdminPassword')]"
+          },
+          "additionalAppSettings": {
+            "value": [
+              {
+                "name": "JwtSettings__Issuer",
+                "value": "[parameters('jwtIssuer')]"
+              },
+              {
+                "name": "JwtSettings__Audience",
+                "value": "[parameters('jwtAudience')]"
+              },
+              {
+                "name": "JwtSettings__AccessTokenExpiryMinutes",
+                "value": "[string(parameters('jwtAccessTokenExpiryMinutes'))]"
+              },
+              {
+                "name": "JwtSettings__RefreshTokenExpiryDays",
+                "value": "[string(parameters('jwtRefreshTokenExpiryDays'))]"
+              },
+              {
+                "name": "ServiceSettings__ApplicationName",
+                "value": "VillageClub.Events"
+              },
+              {
+                "name": "ServiceSettings__EnvironmentName",
+                "value": "[parameters('environmentName')]"
+              }
+            ]
+          },
+          "tags": {
+            "value": {
+              "Environment": "[parameters('environmentName')]",
+              "Service": "[parameters('serviceName')]",
+              "Component": "Events"
+            }
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "336116800008310393"
+            }
+          },
+          "parameters": {
+            "functionAppName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Function App"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the Function App"
+              }
+            },
+            "appServicePlanId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service Plan ID"
+              }
+            },
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account Name for Function App"
+              }
+            },
+            "appInsightsConnectionString": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Insights Connection String"
+              }
+            },
+            "keyVaultName": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault Name for secrets"
+              }
+            },
+            "sqlServerFqdn": {
+              "type": "string",
+              "metadata": {
+                "description": "SQL Server FQDN"
+              }
+            },
+            "databaseName": {
+              "type": "string",
+              "metadata": {
+                "description": "Database Name"
+              }
+            },
+            "sqlAdminLogin": {
+              "type": "securestring",
+              "metadata": {
+                "description": "SQL Admin Login (stored in Key Vault)"
+              }
+            },
+            "sqlAdminPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "SQL Admin Password (stored in Key Vault)"
+              }
+            },
+            "additionalAppSettings": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Additional app settings"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to resources"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2023-12-01",
+              "name": "[parameters('functionAppName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "functionapp,linux",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "serverFarmId": "[parameters('appServicePlanId')]",
+                "reserved": true,
+                "httpsOnly": true,
+                "functionAppConfig": {
+                  "deployment": {
+                    "storage": {
+                      "type": "blobContainer",
+                      "value": "[format('{0}deploymentpackage', reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2023-01-01').primaryEndpoints.blob)]",
+                      "authentication": {
+                        "type": "SystemAssignedIdentity"
+                      }
+                    }
+                  },
+                  "scaleAndConcurrency": {
+                    "maximumInstanceCount": 100,
+                    "instanceMemoryMB": 2048
+                  },
+                  "runtime": {
+                    "name": "dotnet-isolated",
+                    "version": "8.0"
+                  }
+                },
+                "siteConfig": {
+                  "ftpsState": "Disabled",
+                  "minTlsVersion": "1.2",
+                  "appSettings": "[concat(createArray(createObject('name', 'AzureWebJobsStorage__accountName', 'value', parameters('storageAccountName')), createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', parameters('appInsightsConnectionString')), createObject('name', 'FUNCTIONS_EXTENSION_VERSION', 'value', '~4'), createObject('name', 'KeyVaultName', 'value', parameters('keyVaultName')), createObject('name', 'SqlConnection__Server', 'value', parameters('sqlServerFqdn')), createObject('name', 'SqlConnection__Database', 'value', parameters('databaseName')), createObject('name', 'SqlConnection__UserId', 'value', parameters('sqlAdminLogin')), createObject('name', 'SqlConnection__Password', 'value', parameters('sqlAdminPassword'))), parameters('additionalAppSettings'))]"
                 }
               }
             }
@@ -1851,6 +2129,12 @@
           "sku": {
             "value": "Consumption"
           },
+          "membershipServiceUrl": {
+            "value": "[format('https://{0}', reference('functionApp').defaultHostName)]"
+          },
+          "eventsServiceUrl": {
+            "value": "[format('https://{0}', reference('eventsFunctionAppResource').defaultHostName)]"
+          },
           "tags": {
             "value": {
               "Environment": "[parameters('environmentName')]",
@@ -1865,7 +2149,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "16525272035805918133"
+              "templateHash": "12262245206869790123"
             }
           },
           "parameters": {
@@ -1920,6 +2204,13 @@
               "defaultValue": "",
               "metadata": {
                 "description": "Membership service backend URL"
+              }
+            },
+            "eventsServiceUrl": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Events service backend URL"
               }
             }
           },
@@ -2026,6 +2317,78 @@
               ]
             },
             {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/backends",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('apimName'), 'events-backend')]",
+              "properties": {
+                "description": "Events Service Backend",
+                "url": "[parameters('eventsServiceUrl')]",
+                "protocol": "http"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('apimName'), 'events-api')]",
+              "properties": {
+                "displayName": "Events API",
+                "description": "Event management, calendar, and scheduling",
+                "path": "events",
+                "protocols": [
+                  "https"
+                ],
+                "subscriptionRequired": false,
+                "serviceUrl": "[parameters('eventsServiceUrl')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/policies",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'policy')]",
+              "properties": {
+                "value": "<policies>\r\n  <inbound>\r\n    <base />\r\n    <set-backend-service backend-id=\"events-backend\" />\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>\r\n",
+                "format": "xml"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'health')]",
+              "properties": {
+                "displayName": "Health Check",
+                "method": "GET",
+                "urlTemplate": "/api/v1/health",
+                "description": "Check health status of Events service",
+                "responses": [
+                  {
+                    "statusCode": 200,
+                    "description": "Service is healthy",
+                    "representations": [
+                      {
+                        "contentType": "application/json"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
               "type": "Microsoft.ApiManagement/service/apis",
               "apiVersion": "2023-05-01-preview",
               "name": "[format('{0}/{1}', parameters('apimName'), 'service-registry')]",
@@ -2073,7 +2436,7 @@
               "apiVersion": "2023-05-01-preview",
               "name": "[format('{0}/{1}/{2}/{3}', parameters('apimName'), 'service-registry', 'list-services', 'policy')]",
               "properties": {
-                "value": "<policies>\r\n  <inbound>\r\n    <base />\r\n    <return-response>\r\n      <set-status code=\"200\" reason=\"OK\" />\r\n      <set-header name=\"Content-Type\" exists-action=\"override\">\r\n        <value>application/json</value>\r\n      </set-header>\r\n      <set-body>@{\r\n        var services = new JArray();\r\n        \r\n        var membership = new JObject();\r\n        membership[\"name\"] = \"Membership\";\r\n        membership[\"version\"] = \"v1\";\r\n        membership[\"basePath\"] = \"/membership/api/v1\";\r\n        membership[\"healthEndpoint\"] = \"/membership/api/v1/health\";\r\n        membership[\"openapiUrl\"] = \"/membership/swagger.json\";\r\n        membership[\"description\"] = \"User management, authentication, and authorization\";\r\n        services.Add(membership);\r\n        \r\n        var result = new JObject();\r\n        result[\"services\"] = services;\r\n        result[\"timestamp\"] = DateTime.UtcNow.ToString(\"o\");\r\n        \r\n        return result.ToString();\r\n      }</set-body>\r\n    </return-response>\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>\r\n",
+                "value": "<policies>\r\n  <inbound>\r\n    <base />\r\n    <return-response>\r\n      <set-status code=\"200\" reason=\"OK\" />\r\n      <set-header name=\"Content-Type\" exists-action=\"override\">\r\n        <value>application/json</value>\r\n      </set-header>\r\n      <set-body>@{\r\n        var services = new JArray();\r\n        \r\n        var membership = new JObject();\r\n        membership[\"name\"] = \"Membership\";\r\n        membership[\"version\"] = \"v1\";\r\n        membership[\"basePath\"] = \"/membership/api/v1\";\r\n        membership[\"healthEndpoint\"] = \"/membership/api/v1/health\";\r\n        membership[\"openapiUrl\"] = \"/membership/swagger.json\";\r\n        membership[\"description\"] = \"User management, authentication, and authorization\";\r\n        services.Add(membership);\r\n        \r\n        var events = new JObject();\r\n        events[\"name\"] = \"Events\";\r\n        events[\"version\"] = \"v1\";\r\n        events[\"basePath\"] = \"/events/api/v1\";\r\n        events[\"healthEndpoint\"] = \"/events/api/v1/health\";\r\n        events[\"openapiUrl\"] = \"/events/swagger.json\";\r\n        events[\"description\"] = \"Event management, calendar, and scheduling\";\r\n        services.Add(events);\r\n        \r\n        var result = new JObject();\r\n        result[\"services\"] = services;\r\n        result[\"timestamp\"] = DateTime.UtcNow.ToString(\"o\");\r\n        \r\n        return result.ToString();\r\n      }</set-body>\r\n    </return-response>\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>\r\n",
                 "format": "xml"
               },
               "dependsOn": [
@@ -2124,7 +2487,13 @@
             }
           }
         }
-      }
+      },
+      "dependsOn": [
+        "eventsFunctionApp",
+        "eventsFunctionAppResource",
+        "functionApp",
+        "membershipFunctionApp"
+      ]
     }
   },
   "outputs": {
@@ -2135,6 +2504,14 @@
     "membershipFunctionAppUrl": {
       "type": "string",
       "value": "[format('https://{0}', reference('functionApp').defaultHostName)]"
+    },
+    "eventsFunctionAppName": {
+      "type": "string",
+      "value": "[variables('eventsFunctionAppName')]"
+    },
+    "eventsFunctionAppUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference('eventsFunctionAppResource').defaultHostName)]"
     },
     "sqlServerFqdn": {
       "type": "string",

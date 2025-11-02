@@ -1,12 +1,17 @@
 # Service Management & Debugging Scripts
 
-This directory contains scripts for managing and debugging the membership service during local development.
+This directory contains scripts for managing and debugging services during local development.
 
 ## 🚀 Quick Start
 
-**Run full E2E test suite:**
+**Run full E2E test suite (Membership Service):**
 ```powershell
 .\scripts\test-e2e.ps1
+```
+
+**Run full E2E test suite (Events Service):**
+```powershell
+.\scripts\test-e2e-events.ps1
 ```
 
 **Check service status:**
@@ -16,7 +21,7 @@ This directory contains scripts for managing and debugging the membership servic
 
 ## 📋 Available Scripts
 
-### Core Scripts
+### Membership Service Scripts
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
@@ -25,12 +30,33 @@ This directory contains scripts for managing and debugging the membership servic
 | `stop-membership-service.ps1` | Stop background service | `.\stop-membership-service.ps1` |
 | `run-e2e-tests.ps1` | Run Newman tests only | `.\run-e2e-tests.ps1` |
 
-### Debugging Scripts
+### Events Service Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `test-e2e-events.ps1` | Complete E2E test workflow (Events) | `.\test-e2e-events.ps1` |
+| `start-events-service.ps1` | Start Events service in background | `.\start-events-service.ps1` |
+| `stop-events-service.ps1` | Stop Events background service | `.\stop-events-service.ps1` |
+| `run-e2e-tests-events.ps1` | Run Newman tests for Events | `.\run-e2e-tests-events.ps1` |
+
+### Debugging Scripts (All Services)
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
 | `debug-service.ps1` | Multi-purpose debugging tool | `.\debug-service.ps1 [action]` |
-| `view-service-logs.ps1` | View service logs | `.\view-service-logs.ps1 [-Tail] [-Follow]` |
+| `debug-events-service.ps1` | Events service debugging tool | `.\debug-events-service.ps1 [action]` |
+| `view-service-logs.ps1` | View Membership service logs | `.\view-service-logs.ps1 [-Tail] [-Follow]` |
+| `view-events-service-logs.ps1` | View Events service logs | `.\view-events-service-logs.ps1 [-Tail] [-Follow]` |
+
+## 🏗️ Service Ports
+
+| Service | Port | Health Endpoint |
+|---------|------|----------------|
+| Membership | 7071 | `http://localhost:7071/api/v1/health` |
+| Events | 7072 | `http://localhost:7072/api/v1/health` |
+| (Future) Scheduling | 7073 | `http://localhost:7073/api/v1/health` |
+| (Future) Bar | 7074 | `http://localhost:7074/api/v1/health` |
+| (Future) Notifications | 7075 | `http://localhost:7075/api/v1/health` |
 
 ## 🔍 Debugging Guide
 
@@ -214,11 +240,122 @@ The job might not have started correctly. Try:
 .\scripts\debug-service.ps1 status
 ```
 
-### Port 7071 already in use
+### Port 7071 already in use (Membership Service)
 Kill existing processes:
 ```powershell
 .\scripts\stop-membership-service.ps1
 ```
+
+### Port 7072 already in use (Events Service)
+Kill existing processes:
+```powershell
+.\scripts\stop-events-service.ps1
+```
+
+## 🎯 Events Service E2E Testing
+
+### Prerequisites
+
+1. **Newman installed globally:**
+   ```powershell
+   npm install -g newman
+   ```
+
+2. **Database configured:**
+   - VillageClubDB exists with Events schema
+   - Test users seeded (committee@test.com, member@test.com)
+
+3. **Membership service running** (for authentication):
+   ```powershell
+   .\scripts\start-membership-service.ps1
+   ```
+
+### Running Events Service Tests
+
+**Full automated workflow:**
+```powershell
+.\scripts\test-e2e-events.ps1
+```
+This will:
+1. Start Events service on port 7072
+2. Wait for service to be healthy
+3. Run 17 test requests with 34 assertions
+4. Stop Events service
+5. Display results
+
+**Keep service running for debugging:**
+```powershell
+.\scripts\test-e2e-events.ps1 -KeepServiceRunning
+```
+
+**Use existing running service:**
+```powershell
+# Start service manually
+.\scripts\start-events-service.ps1
+
+# Run tests against running service
+.\scripts\test-e2e-events.ps1 -SkipServiceStart
+
+# Clean up when done
+.\scripts\stop-events-service.ps1
+```
+
+### Events Service Test Coverage
+
+The Events service E2E test suite validates:
+- **Health Checks** (2 requests, 5 assertions): Health and readiness endpoints
+- **Authentication** (2 requests, 6 assertions): Committee and member token acquisition
+- **CRUD Operations** (5 requests, 11 assertions): Create, get, update, delete with authorization tests
+- **State Transitions** (4 requests, 7 assertions): Publish, complete, cancel workflows
+- **Query Operations** (2 requests, 4 assertions): Pagination and status filtering
+- **Cleanup** (2 requests, 2 assertions): Delete test data
+
+**Expected Result:** 34/34 assertions passing (100%)
+
+### Debugging Events Service Issues
+
+**Check Events service status:**
+```powershell
+.\scripts\debug-events-service.ps1 status
+```
+
+**View Events service logs:**
+```powershell
+.\scripts\view-events-service-logs.ps1
+```
+
+**Test Events service health:**
+```powershell
+Invoke-WebRequest http://localhost:7072/api/v1/health
+```
+
+**Check background job:**
+```powershell
+Get-Job | Where-Object { $_.Command -like "*7072*" }
+```
+
+**View recent Events service logs:**
+```powershell
+Get-Job | Where-Object { $_.Command -like "*7072*" } | Receive-Job -Keep | Select-Object -Last 50
+```
+
+### Common Events Service Issues
+
+**Test failing: "Cannot convert enum value"**
+- **Cause**: JsonStringEnumConverter not configured
+- **Fix**: Ensure EventFunctions._jsonOptions includes `JsonStringEnumConverter(JsonNamingPolicy.CamelCase)`
+
+**Test failing: "500 Internal Server Error on Forbidden"**
+- **Cause**: Synchronous WriteString in AuthorizationHelper
+- **Fix**: Use `await response.WriteAsJsonAsync(errorResponse)` instead of synchronous methods
+
+**Events service won't connect to database**
+- **Cause**: Connection string misconfigured
+- **Fix**: Check `local.settings.json` has correct VillageClubDB connection string
+
+**Authentication tests fail**
+- **Cause**: Membership service not running
+- **Fix**: Start membership service first: `.\scripts\start-membership-service.ps1`
 
 ## 📝 Notes
 

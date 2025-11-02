@@ -1,0 +1,977 @@
+{
+    "info":  {
+                 "_postman_id":  "events-service-tests",
+                 "name":  "Events Service Test Suite",
+                 "description":  "Comprehensive test suite for the Village Club Events Service API",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "name":  "Health Checks",
+                     "item":  [
+                                  {
+                                      "name":  "Health Check",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Response has correct structure\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027service\u0027);",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027status\u0027);",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027timestamp\u0027);",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027version\u0027);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Service is healthy\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData.status).to.eql(\u0027Healthy\u0027);",
+                                                                                    "    pm.expect(jsonData.service).to.eql(\u0027Events\u0027);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/health",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "health"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Readiness Check",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Service is ready\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027ready\u0027);",
+                                                                                    "    pm.expect(jsonData.ready).to.be.true;",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/ready",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "ready"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Authentication Setup",
+                     "item":  [
+                                  {
+                                      "name":  "Login as Committee Member",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Response contains token\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027accessToken\u0027);",
+                                                                                    "    pm.expect(jsonData.accessToken).to.be.a(\u0027string\u0027);",
+                                                                                    "    pm.collectionVariables.set(\u0027committeeToken\u0027, jsonData.accessToken);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"User has Committee role\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData.user.role).to.eql(2);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"{{committeeEmail}}\",\n  \"password\": \"{{committeePassword}}\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{membershipBaseUrl}}/api/v1/auth/login",
+                                                                  "host":  [
+                                                                               "{{membershipBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "auth",
+                                                                               "login"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Login as Regular Member",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Response contains token\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027accessToken\u0027);",
+                                                                                    "    pm.expect(jsonData.accessToken).to.be.a(\u0027string\u0027);",
+                                                                                    "    pm.collectionVariables.set(\u0027memberToken\u0027, jsonData.accessToken);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"User has Member role\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData.user.role).to.eql(0);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"{{memberEmail}}\",\n  \"password\": \"{{memberPassword}}\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{membershipBaseUrl}}/api/v1/auth/login",
+                                                                  "host":  [
+                                                                               "{{membershipBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "auth",
+                                                                               "login"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Event CRUD Operations",
+                     "item":  [
+                                  {
+                                      "name":  "Create Event - Success",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 201\", function () {",
+                                                                                    "    pm.response.to.have.status(201);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Event created successfully\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027id\u0027);",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027title\u0027);",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027eventType\u0027);",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027status\u0027);",
+                                                                                    "    pm.expect(jsonData.title).to.eql(\u0027Quiz Night\u0027);",
+                                                                                    "    pm.expect(jsonData.eventType).to.eql(\u0027specialEvent\u0027);",
+                                                                                    "    pm.expect(jsonData.status).to.eql(\u0027draft\u0027);",
+                                                                                    "    pm.collectionVariables.set(\u0027eventId\u0027, jsonData.id);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{committeeToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"title\": \"Quiz Night\",\n  \"description\": \"Monthly quiz night with prizes\",\n  \"eventType\": \"SpecialEvent\",\n  \"startDateTime\": \"{{futureDate}}\",\n  \"endDateTime\": \"{{futureEndDate}}\",\n  \"maxAttendees\": 50\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Create Event - Unauthorized (No Token)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 401\", function () {",
+                                                                                    "    pm.response.to.have.status(401);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"title\": \"Unauthorized Event\",\n  \"eventType\": \"SpecialEvent\",\n  \"startDateTime\": \"{{futureDate}}\",\n  \"endDateTime\": \"{{futureEndDate}}\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Create Event - Forbidden (Non-Committee)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 403\", function () {",
+                                                                                    "    pm.response.to.have.status(403);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Error indicates permission denied\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027message\u0027);",
+                                                                                    "    pm.expect(jsonData.code).to.eql(\u0027FORBIDDEN\u0027);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{memberToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"title\": \"Forbidden Event\",\n  \"eventType\": \"SpecialEvent\",\n  \"startDateTime\": \"{{futureDate}}\",\n  \"endDateTime\": \"{{futureEndDate}}\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Get Event by ID",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Event retrieved successfully\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027id\u0027);",
+                                                                                    "    pm.expect(jsonData.id).to.eql(pm.collectionVariables.get(\u0027eventId\u0027));",
+                                                                                    "    pm.expect(jsonData.title).to.eql(\u0027Quiz Night\u0027);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{memberToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events/{{eventId}}",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events",
+                                                                               "{{eventId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Update Event",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Event updated successfully\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData.description).to.eql(\u0027Updated: Monthly quiz night with prizes and refreshments\u0027);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{committeeToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"description\": \"Updated: Monthly quiz night with prizes and refreshments\",\n  \"maxAttendees\": 60\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events/{{eventId}}",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events",
+                                                                               "{{eventId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Event State Transitions",
+                     "item":  [
+                                  {
+                                      "name":  "Publish Event",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Event published successfully\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData.status).to.eql(\u0027published\u0027);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{committeeToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events/{{eventId}}/publish",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events",
+                                                                               "{{eventId}}",
+                                                                               "publish"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Complete Event",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Event completed successfully\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData.status).to.eql(\u0027completed\u0027);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{committeeToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events/{{eventId}}/complete",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events",
+                                                                               "{{eventId}}",
+                                                                               "complete"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Create Event for Cancellation",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 201\", function () {",
+                                                                                    "    pm.response.to.have.status(201);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Event created for cancellation test\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.collectionVariables.set(\u0027cancelEventId\u0027, jsonData.id);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{committeeToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"title\": \"Event to Cancel\",\n  \"description\": \"This event will be cancelled\",\n  \"eventType\": \"SpecialEvent\",\n  \"startDateTime\": \"{{futureDate}}\",\n  \"endDateTime\": \"{{futureEndDate}}\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Cancel Event",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Event cancelled successfully\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData.status).to.eql(\u0027cancelled\u0027);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{committeeToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events/{{cancelEventId}}/cancel",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events",
+                                                                               "{{cancelEventId}}",
+                                                                               "cancel"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Query Operations",
+                     "item":  [
+                                  {
+                                      "name":  "Get Events - Paginated",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Paginated response structure\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027items\u0027);",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027page\u0027);",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027pageSize\u0027);",
+                                                                                    "    pm.expect(jsonData).to.have.property(\u0027totalCount\u0027);",
+                                                                                    "    pm.expect(jsonData.items).to.be.an(\u0027array\u0027);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{memberToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events?page=1\u0026pageSize=10",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events"
+                                                                           ],
+                                                                  "query":  [
+                                                                                {
+                                                                                    "key":  "page",
+                                                                                    "value":  "1"
+                                                                                },
+                                                                                {
+                                                                                    "key":  "pageSize",
+                                                                                    "value":  "10"
+                                                                                }
+                                                                            ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Get Events - Filter by Status",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 200\", function () {",
+                                                                                    "    pm.response.to.have.status(200);",
+                                                                                    "});",
+                                                                                    "",
+                                                                                    "pm.test(\"Only published and completed events returned\", function () {",
+                                                                                    "    var jsonData = pm.response.json();",
+                                                                                    "    jsonData.items.forEach(function(event) {",
+                                                                                    "        pm.expect([\u0027Published\u0027, \u0027Completed\u0027]).to.include(event.status);",
+                                                                                    "    });",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{memberToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events?includeStatus=Published,Completed",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events"
+                                                                           ],
+                                                                  "query":  [
+                                                                                {
+                                                                                    "key":  "includeStatus",
+                                                                                    "value":  "Published,Completed"
+                                                                                }
+                                                                            ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Cleanup",
+                     "item":  [
+                                  {
+                                      "name":  "Delete Test Event",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 204\", function () {",
+                                                                                    "    pm.response.to.have.status(204);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{committeeToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "DELETE",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events/{{eventId}}",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events",
+                                                                               "{{eventId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Delete Cancelled Event",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Status code is 204\", function () {",
+                                                                                    "    pm.response.to.have.status(204);",
+                                                                                    "});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{committeeToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "DELETE",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{eventsBaseUrl}}/api/v1/events/{{cancelEventId}}",
+                                                                  "host":  [
+                                                                               "{{eventsBaseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "v1",
+                                                                               "events",
+                                                                               "{{cancelEventId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 }
+             ],
+    "variable":  [
+                     {
+                         "key":  "eventId",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "cancelEventId",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "committeeToken",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "memberToken",
+                         "value":  ""
+                     }
+                 ]
+}

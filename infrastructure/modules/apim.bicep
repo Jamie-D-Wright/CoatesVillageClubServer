@@ -26,6 +26,9 @@ param tags object = {}
 @description('Membership service backend URL')
 param membershipServiceUrl string = ''
 
+@description('Events service backend URL')
+param eventsServiceUrl string = ''
+
 // API Management Service
 resource apimService 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
   name: apimName
@@ -128,6 +131,82 @@ resource membershipHealthOperation 'Microsoft.ApiManagement/service/apis/operati
   }
 }
 
+// Events Service Backend
+resource eventsBackend 'Microsoft.ApiManagement/service/backends@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: apimService
+  name: 'events-backend'
+  properties: {
+    description: 'Events Service Backend'
+    url: eventsServiceUrl
+    protocol: 'http'
+  }
+}
+
+// Events API
+resource eventsApi 'Microsoft.ApiManagement/service/apis@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: apimService
+  name: 'events-api'
+  properties: {
+    displayName: 'Events API'
+    description: 'Event management, calendar, and scheduling'
+    path: 'events'
+    protocols: [
+      'https'
+    ]
+    subscriptionRequired: false
+    serviceUrl: eventsServiceUrl
+  }
+}
+
+// Events API policy - route to backend with health check
+resource eventsApiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'policy'
+  properties: {
+    value: '''
+<policies>
+  <inbound>
+    <base />
+    <set-backend-service backend-id="events-backend" />
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>
+'''
+    format: 'xml'
+  }
+}
+
+// Health check operation for Events API
+resource eventsHealthOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'health'
+  properties: {
+    displayName: 'Health Check'
+    method: 'GET'
+    urlTemplate: '/api/v1/health'
+    description: 'Check health status of Events service'
+    responses: [
+      {
+        statusCode: 200
+        description: 'Service is healthy'
+        representations: [
+          {
+            contentType: 'application/json'
+          }
+        ]
+      }
+    ]
+  }
+}
+
 // Service Discovery API
 resource serviceDiscoveryApi 'Microsoft.ApiManagement/service/apis@2023-05-01-preview' = {
   parent: apimService
@@ -192,6 +271,15 @@ resource serviceListPolicy 'Microsoft.ApiManagement/service/apis/operations/poli
         membership["openapiUrl"] = "/membership/swagger.json";
         membership["description"] = "User management, authentication, and authorization";
         services.Add(membership);
+        
+        var events = new JObject();
+        events["name"] = "Events";
+        events["version"] = "v1";
+        events["basePath"] = "/events/api/v1";
+        events["healthEndpoint"] = "/events/api/v1/health";
+        events["openapiUrl"] = "/events/swagger.json";
+        events["description"] = "Event management, calendar, and scheduling";
+        services.Add(events);
         
         var result = new JObject();
         result["services"] = services;

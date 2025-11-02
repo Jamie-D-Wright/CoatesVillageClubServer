@@ -33,6 +33,7 @@ param jwtRefreshTokenExpiryDays int = 30
 // Storage accounts: cvcst{component}{env} (no hyphens, max 24 chars, lowercase only)
 
 var membershipFunctionAppName = 'cvc-func-membership-${environmentName}'
+var eventsFunctionAppName = 'cvc-func-events-${environmentName}'
 var appServicePlanName = 'cvc-plan-flex-${environmentName}'  // New plan name for Flex Consumption
 var appInsightsName = 'cvc-insights-${environmentName}'
 var keyVaultName = 'cvc-kv-${environmentName}'  // cvc-kv-dev (max 24)
@@ -165,6 +166,73 @@ resource functionAppStorageBlobContributor 'Microsoft.Authorization/roleAssignme
     principalType: 'ServicePrincipal'
   }
 }
+
+// Events Function App Module
+module eventsFunctionApp 'modules/function-app.bicep' = {
+  name: 'eventsFunctionApp'
+  params: {
+    functionAppName: eventsFunctionAppName
+    location: location
+    appServicePlanId: appServicePlan.id
+    storageAccountName: functionStorageAccount.name
+    appInsightsConnectionString: appInsights.properties.ConnectionString
+    keyVaultName: keyVault.name
+    sqlServerFqdn: sqlDatabase.outputs.sqlServerFqdn
+    databaseName: sqlDatabase.outputs.databaseName
+    sqlAdminLogin: sqlAdminLogin
+    sqlAdminPassword: sqlAdminPassword
+    additionalAppSettings: [
+      {
+        name: 'JwtSettings__Issuer'
+        value: jwtIssuer
+      }
+      {
+        name: 'JwtSettings__Audience'
+        value: jwtAudience
+      }
+      {
+        name: 'JwtSettings__AccessTokenExpiryMinutes'
+        value: string(jwtAccessTokenExpiryMinutes)
+      }
+      {
+        name: 'JwtSettings__RefreshTokenExpiryDays'
+        value: string(jwtRefreshTokenExpiryDays)
+      }
+      {
+        name: 'ServiceSettings__ApplicationName'
+        value: 'VillageClub.Events'
+      }
+      {
+        name: 'ServiceSettings__EnvironmentName'
+        value: environmentName
+      }
+    ]
+    tags: {
+      Environment: environmentName
+      Service: serviceName
+      Component: 'Events'
+    }
+  }
+}
+
+resource eventsFunctionAppResource 'Microsoft.Web/sites@2022-03-01' existing = {
+  name: eventsFunctionAppName
+  dependsOn: [
+    eventsFunctionApp
+  ]
+}
+
+// Grant the Events Function App managed identity Storage Blob Data Contributor role on the function storage account
+resource eventsFunctionAppStorageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(functionStorageAccount.id, eventsFunctionAppResource.id, 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+  scope: functionStorageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe') // Storage Blob Data Contributor
+    principalId: eventsFunctionAppResource.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 
 // SQL Database Module
 module sqlDatabase 'modules/sql-database.bicep' = {
@@ -302,14 +370,20 @@ module apiManagement 'modules/apim.bicep' = {
     publisherEmail: apimPublisherEmail
     publisherName: apimPublisherName
     sku: 'Consumption'
+    membershipServiceUrl: 'https://${functionApp.properties.defaultHostName}'
+    eventsServiceUrl: 'https://${eventsFunctionAppResource.properties.defaultHostName}'
     tags: {
       Environment: environmentName
       Service: serviceName
     }
   }
+  dependsOn: [
+    membershipFunctionApp
+    eventsFunctionApp
+  ]
 }
 
-// Grant the function app access to the Key Vault
+// Grant the function apps access to the Key Vault
 resource keyVaultAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2022-07-01' = {
   parent: keyVault
   name: 'add'
@@ -325,6 +399,16 @@ resource keyVaultAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2022-07-
           ]
         }
       }
+      {
+        objectId: eventsFunctionAppResource.identity.principalId
+        tenantId: subscription().tenantId
+        permissions: {
+          secrets: [
+            'get'
+            'list'
+          ]
+        }
+      }
     ]
   }
 }
@@ -332,6 +416,8 @@ resource keyVaultAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2022-07-
 // Outputs
 output membershipFunctionAppName string = membershipFunctionAppName
 output membershipFunctionAppUrl string = 'https://${functionApp.properties.defaultHostName}'
+output eventsFunctionAppName string = eventsFunctionAppName
+output eventsFunctionAppUrl string = 'https://${eventsFunctionAppResource.properties.defaultHostName}'
 output sqlServerFqdn string = sqlDatabase.outputs.sqlServerFqdn
 output databaseName string = sqlDatabase.outputs.databaseName
 output apimGatewayUrl string = apiManagement.outputs.apimGatewayUrl
