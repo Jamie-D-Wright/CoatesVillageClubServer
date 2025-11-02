@@ -108,7 +108,7 @@ resource membershipApiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023
   }
 }
 
-// Health check operation for Membership API
+// Membership API Operations
 resource membershipHealthOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (membershipServiceUrl != '') {
   parent: membershipApi
   name: 'health'
@@ -117,17 +117,50 @@ resource membershipHealthOperation 'Microsoft.ApiManagement/service/apis/operati
     method: 'GET'
     urlTemplate: '/api/v1/health'
     description: 'Check health status of Membership service'
-    responses: [
-      {
-        statusCode: 200
-        description: 'Service is healthy'
-        representations: [
-          {
-            contentType: 'application/json'
-          }
-        ]
-      }
-    ]
+  }
+}
+
+resource membershipReadyOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (membershipServiceUrl != '') {
+  parent: membershipApi
+  name: 'ready'
+  properties: {
+    displayName: 'Readiness Check'
+    method: 'GET'
+    urlTemplate: '/api/v1/ready'
+    description: 'Check readiness status of Membership service'
+  }
+}
+
+resource membershipLoginOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (membershipServiceUrl != '') {
+  parent: membershipApi
+  name: 'login'
+  properties: {
+    displayName: 'Login'
+    method: 'POST'
+    urlTemplate: '/api/v1/auth/login'
+    description: 'Authenticate user and return JWT tokens'
+  }
+}
+
+resource membershipRegisterOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (membershipServiceUrl != '') {
+  parent: membershipApi
+  name: 'register'
+  properties: {
+    displayName: 'Register'
+    method: 'POST'
+    urlTemplate: '/api/v1/auth/register'
+    description: 'Register a new user account'
+  }
+}
+
+resource membershipRefreshOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (membershipServiceUrl != '') {
+  parent: membershipApi
+  name: 'refresh'
+  properties: {
+    displayName: 'Refresh Token'
+    method: 'POST'
+    urlTemplate: '/api/v1/auth/refresh'
+    description: 'Refresh access token using refresh token'
   }
 }
 
@@ -184,7 +217,7 @@ resource eventsApiPolicy 'Microsoft.ApiManagement/service/apis/policies@2023-05-
   }
 }
 
-// Health check operation for Events API
+// Events API Operations
 resource eventsHealthOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
   parent: eventsApi
   name: 'health'
@@ -193,15 +226,151 @@ resource eventsHealthOperation 'Microsoft.ApiManagement/service/apis/operations@
     method: 'GET'
     urlTemplate: '/api/v1/health'
     description: 'Check health status of Events service'
-    responses: [
+  }
+}
+
+resource eventsReadyOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'ready'
+  properties: {
+    displayName: 'Readiness Check'
+    method: 'GET'
+    urlTemplate: '/api/v1/ready'
+    description: 'Check readiness status of Events service'
+  }
+}
+
+resource eventsCreateOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'create-event'
+  properties: {
+    displayName: 'Create Event'
+    method: 'POST'
+    urlTemplate: '/api/v1/events'
+    description: 'Create a new event (Committee only)'
+  }
+}
+
+resource eventsListOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'list-events'
+  properties: {
+    displayName: 'List Events'
+    method: 'GET'
+    urlTemplate: '/api/v1/events'
+    description: 'Get paginated list of events with optional filters'
+  }
+}
+
+resource eventsGetByIdOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'get-event'
+  properties: {
+    displayName: 'Get Event by ID'
+    method: 'GET'
+    urlTemplate: '/api/v1/events/{id}'
+    description: 'Get a specific event by ID'
+    templateParameters: [
       {
-        statusCode: 200
-        description: 'Service is healthy'
-        representations: [
-          {
-            contentType: 'application/json'
-          }
-        ]
+        name: 'id'
+        type: 'string'
+        required: true
+        description: 'Event ID (GUID)'
+      }
+    ]
+  }
+}
+
+resource eventsUpdateOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'update-event'
+  properties: {
+    displayName: 'Update Event'
+    method: 'PUT'
+    urlTemplate: '/api/v1/events/{id}'
+    description: 'Update an existing event (Committee only)'
+    templateParameters: [
+      {
+        name: 'id'
+        type: 'string'
+        required: true
+        description: 'Event ID (GUID)'
+      }
+    ]
+  }
+}
+
+resource eventsDeleteOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'delete-event'
+  properties: {
+    displayName: 'Delete Event'
+    method: 'DELETE'
+    urlTemplate: '/api/v1/events/{id}'
+    description: 'Delete an event (Committee only)'
+    templateParameters: [
+      {
+        name: 'id'
+        type: 'string'
+        required: true
+        description: 'Event ID (GUID)'
+      }
+    ]
+  }
+}
+
+resource eventsPublishOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'publish-event'
+  properties: {
+    displayName: 'Publish Event'
+    method: 'POST'
+    urlTemplate: '/api/v1/events/{id}/publish'
+    description: 'Publish an event (Committee only)'
+    templateParameters: [
+      {
+        name: 'id'
+        type: 'string'
+        required: true
+        description: 'Event ID (GUID)'
+      }
+    ]
+  }
+}
+
+resource eventsCompleteOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'complete-event'
+  properties: {
+    displayName: 'Complete Event'
+    method: 'POST'
+    urlTemplate: '/api/v1/events/{id}/complete'
+    description: 'Mark an event as completed (Committee only)'
+    templateParameters: [
+      {
+        name: 'id'
+        type: 'string'
+        required: true
+        description: 'Event ID (GUID)'
+      }
+    ]
+  }
+}
+
+resource eventsCancelOperation 'Microsoft.ApiManagement/service/apis/operations@2023-05-01-preview' = if (eventsServiceUrl != '') {
+  parent: eventsApi
+  name: 'cancel-event'
+  properties: {
+    displayName: 'Cancel Event'
+    method: 'POST'
+    urlTemplate: '/api/v1/events/{id}/cancel'
+    description: 'Cancel an event (Committee only)'
+    templateParameters: [
+      {
+        name: 'id'
+        type: 'string'
+        required: true
+        description: 'Event ID (GUID)'
       }
     ]
   }

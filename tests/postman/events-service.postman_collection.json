@@ -243,7 +243,8 @@
                                                                                     "    pm.expect(jsonData.title).to.eql(\u0027Quiz Night\u0027);",
                                                                                     "    pm.expect(jsonData.eventType).to.eql(\u0027specialEvent\u0027);",
                                                                                     "    pm.expect(jsonData.status).to.eql(\u0027draft\u0027);",
-                                                                                    "    pm.collectionVariables.set(\u0027eventId\u0027, jsonData.id);",
+                                                                                    "    pm.environment.set(\u0027eventId\u0027, jsonData.id);",
+                                                                                    "    console.log(\u0027Set eventId to:\u0027 + jsonData.id);",
                                                                                     "});"
                                                                                 ],
                                                                        "type":  "text/javascript"
@@ -270,7 +271,7 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"title\": \"Quiz Night\",\n  \"description\": \"Monthly quiz night with prizes\",\n  \"eventType\": \"SpecialEvent\",\n  \"startDateTime\": \"{{futureDate}}\",\n  \"endDateTime\": \"{{futureEndDate}}\",\n  \"maxAttendees\": 50\n}"
+                                                                   "raw":  "{\n  \"title\": \"Quiz Night\",\n  \"description\": \"Monthly quiz night with prizes\",\n  \"eventType\": \"SpecialEvent\",\n  \"startDateTime\": \"{{futureDate}}\",\n  \"endDateTime\": \"{{futureEndDate}}\"\n}"
                                                                },
                                                       "url":  {
                                                                   "raw":  "{{eventsBaseUrl}}/api/v1/events",
@@ -404,8 +405,9 @@
                                                                                     "pm.test(\"Event retrieved successfully\", function () {",
                                                                                     "    var jsonData = pm.response.json();",
                                                                                     "    pm.expect(jsonData).to.have.property(\u0027id\u0027);",
-                                                                                    "    pm.expect(jsonData.id).to.eql(pm.collectionVariables.get(\u0027eventId\u0027));",
+                                                                                    "    pm.expect(jsonData.id).to.eql(pm.environment.get(\u0027eventId\u0027));",
                                                                                     "    pm.expect(jsonData.title).to.eql(\u0027Quiz Night\u0027);",
+                                                                                    "    console.log(\u0027Retrieved event with ID:\u0027 + jsonData.id);",
                                                                                     "});"
                                                                                 ],
                                                                        "type":  "text/javascript"
@@ -484,7 +486,7 @@
                                                                  ],
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{\n  \"description\": \"Updated: Monthly quiz night with prizes and refreshments\",\n  \"maxAttendees\": 60\n}"
+                                                                   "raw":  "{\n  \"description\": \"Updated: Monthly quiz night with prizes and refreshments\"\n}"
                                                                },
                                                       "url":  {
                                                                   "raw":  "{{eventsBaseUrl}}/api/v1/events/{{eventId}}",

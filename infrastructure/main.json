@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "16640601167188157720"
+      "templateHash": "12809987507798967492"
     }
   },
   "parameters": {
@@ -79,7 +79,8 @@
   "variables": {
     "membershipFunctionAppName": "[format('cvc-func-membership-{0}', parameters('environmentName'))]",
     "eventsFunctionAppName": "[format('cvc-func-events-{0}', parameters('environmentName'))]",
-    "appServicePlanName": "[format('cvc-plan-flex-{0}', parameters('environmentName'))]",
+    "membershipPlanName": "[format('cvc-plan-membership-{0}', parameters('environmentName'))]",
+    "eventsPlanName": "[format('cvc-plan-events-{0}', parameters('environmentName'))]",
     "appInsightsName": "[format('cvc-insights-{0}', parameters('environmentName'))]",
     "keyVaultName": "[format('cvc-kv-{0}', parameters('environmentName'))]",
     "functionStorageAccountName": "[format('cvcstfunc{0}', toLower(parameters('environmentName')))]",
@@ -106,10 +107,24 @@
         "minimumTlsVersion": "TLS1_2"
       }
     },
-    "appServicePlan": {
+    "membershipPlan": {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2023-12-01",
-      "name": "[variables('appServicePlanName')]",
+      "name": "[variables('membershipPlanName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp",
+      "sku": {
+        "name": "FC1",
+        "tier": "FlexConsumption"
+      },
+      "properties": {
+        "reserved": true
+      }
+    },
+    "eventsPlan": {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-12-01",
+      "name": "[variables('eventsPlanName')]",
       "location": "[parameters('location')]",
       "kind": "functionapp",
       "sku": {
@@ -250,7 +265,7 @@
             "value": "[parameters('location')]"
           },
           "appServicePlanId": {
-            "value": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
+            "value": "[resourceId('Microsoft.Web/serverfarms', variables('membershipPlanName'))]"
           },
           "storageAccountName": {
             "value": "[variables('functionStorageAccountName')]"
@@ -472,9 +487,9 @@
       },
       "dependsOn": [
         "appInsights",
-        "appServicePlan",
         "functionStorageAccount",
         "keyVault",
+        "membershipPlan",
         "sqlDatabase"
       ]
     },
@@ -495,7 +510,7 @@
             "value": "[parameters('location')]"
           },
           "appServicePlanId": {
-            "value": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
+            "value": "[resourceId('Microsoft.Web/serverfarms', variables('eventsPlanName'))]"
           },
           "storageAccountName": {
             "value": "[variables('functionStorageAccountName')]"
@@ -717,7 +732,7 @@
       },
       "dependsOn": [
         "appInsights",
-        "appServicePlan",
+        "eventsPlan",
         "functionStorageAccount",
         "keyVault",
         "sqlDatabase"
@@ -2149,7 +2164,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "12262245206869790123"
+              "templateHash": "925185093681918545"
             }
           },
           "parameters": {
@@ -2299,18 +2314,67 @@
                 "displayName": "Health Check",
                 "method": "GET",
                 "urlTemplate": "/api/v1/health",
-                "description": "Check health status of Membership service",
-                "responses": [
-                  {
-                    "statusCode": 200,
-                    "description": "Service is healthy",
-                    "representations": [
-                      {
-                        "contentType": "application/json"
-                      }
-                    ]
-                  }
-                ]
+                "description": "Check health status of Membership service"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'membership-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('membershipServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'membership-api', 'ready')]",
+              "properties": {
+                "displayName": "Readiness Check",
+                "method": "GET",
+                "urlTemplate": "/api/v1/ready",
+                "description": "Check readiness status of Membership service"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'membership-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('membershipServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'membership-api', 'login')]",
+              "properties": {
+                "displayName": "Login",
+                "method": "POST",
+                "urlTemplate": "/api/v1/auth/login",
+                "description": "Authenticate user and return JWT tokens"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'membership-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('membershipServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'membership-api', 'register')]",
+              "properties": {
+                "displayName": "Register",
+                "method": "POST",
+                "urlTemplate": "/api/v1/auth/register",
+                "description": "Register a new user account"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'membership-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('membershipServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'membership-api', 'refresh')]",
+              "properties": {
+                "displayName": "Refresh Token",
+                "method": "POST",
+                "urlTemplate": "/api/v1/auth/refresh",
+                "description": "Refresh access token using refresh token"
               },
               "dependsOn": [
                 "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'membership-api')]"
@@ -2371,16 +2435,188 @@
                 "displayName": "Health Check",
                 "method": "GET",
                 "urlTemplate": "/api/v1/health",
-                "description": "Check health status of Events service",
-                "responses": [
+                "description": "Check health status of Events service"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'ready')]",
+              "properties": {
+                "displayName": "Readiness Check",
+                "method": "GET",
+                "urlTemplate": "/api/v1/ready",
+                "description": "Check readiness status of Events service"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'create-event')]",
+              "properties": {
+                "displayName": "Create Event",
+                "method": "POST",
+                "urlTemplate": "/api/v1/events",
+                "description": "Create a new event (Committee only)"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'list-events')]",
+              "properties": {
+                "displayName": "List Events",
+                "method": "GET",
+                "urlTemplate": "/api/v1/events",
+                "description": "Get paginated list of events with optional filters"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'get-event')]",
+              "properties": {
+                "displayName": "Get Event by ID",
+                "method": "GET",
+                "urlTemplate": "/api/v1/events/{id}",
+                "description": "Get a specific event by ID",
+                "templateParameters": [
                   {
-                    "statusCode": 200,
-                    "description": "Service is healthy",
-                    "representations": [
-                      {
-                        "contentType": "application/json"
-                      }
-                    ]
+                    "name": "id",
+                    "type": "string",
+                    "required": true,
+                    "description": "Event ID (GUID)"
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'update-event')]",
+              "properties": {
+                "displayName": "Update Event",
+                "method": "PUT",
+                "urlTemplate": "/api/v1/events/{id}",
+                "description": "Update an existing event (Committee only)",
+                "templateParameters": [
+                  {
+                    "name": "id",
+                    "type": "string",
+                    "required": true,
+                    "description": "Event ID (GUID)"
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'delete-event')]",
+              "properties": {
+                "displayName": "Delete Event",
+                "method": "DELETE",
+                "urlTemplate": "/api/v1/events/{id}",
+                "description": "Delete an event (Committee only)",
+                "templateParameters": [
+                  {
+                    "name": "id",
+                    "type": "string",
+                    "required": true,
+                    "description": "Event ID (GUID)"
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'publish-event')]",
+              "properties": {
+                "displayName": "Publish Event",
+                "method": "POST",
+                "urlTemplate": "/api/v1/events/{id}/publish",
+                "description": "Publish an event (Committee only)",
+                "templateParameters": [
+                  {
+                    "name": "id",
+                    "type": "string",
+                    "required": true,
+                    "description": "Event ID (GUID)"
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'complete-event')]",
+              "properties": {
+                "displayName": "Complete Event",
+                "method": "POST",
+                "urlTemplate": "/api/v1/events/{id}/complete",
+                "description": "Mark an event as completed (Committee only)",
+                "templateParameters": [
+                  {
+                    "name": "id",
+                    "type": "string",
+                    "required": true,
+                    "description": "Event ID (GUID)"
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apimName'), 'events-api')]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('eventsServiceUrl'), ''))]",
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('apimName'), 'events-api', 'cancel-event')]",
+              "properties": {
+                "displayName": "Cancel Event",
+                "method": "POST",
+                "urlTemplate": "/api/v1/events/{id}/cancel",
+                "description": "Cancel an event (Committee only)",
+                "templateParameters": [
+                  {
+                    "name": "id",
+                    "type": "string",
+                    "required": true,
+                    "description": "Event ID (GUID)"
                   }
                 ]
               },

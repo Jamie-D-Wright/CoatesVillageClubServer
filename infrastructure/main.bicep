@@ -34,7 +34,8 @@ param jwtRefreshTokenExpiryDays int = 30
 
 var membershipFunctionAppName = 'cvc-func-membership-${environmentName}'
 var eventsFunctionAppName = 'cvc-func-events-${environmentName}'
-var appServicePlanName = 'cvc-plan-flex-${environmentName}'  // New plan name for Flex Consumption
+var membershipPlanName = 'cvc-plan-membership-${environmentName}'  // Separate plan for each function app (Flex Consumption limitation)
+var eventsPlanName = 'cvc-plan-events-${environmentName}'
 var appInsightsName = 'cvc-insights-${environmentName}'
 var keyVaultName = 'cvc-kv-${environmentName}'  // cvc-kv-dev (max 24)
 var functionStorageAccountName = 'cvcstfunc${toLower(environmentName)}'  // cvcstfuncdev (12 chars)
@@ -60,8 +61,23 @@ resource functionStorageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' =
   }
 }
 
-resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
-  name: appServicePlanName
+// Membership App Service Plan (Flex Consumption - one app per plan)
+resource membershipPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
+  name: membershipPlanName
+  location: location
+  kind: 'functionapp'
+  sku: {
+    name: 'FC1'
+    tier: 'FlexConsumption'
+  }
+  properties: {
+    reserved: true  // Required for Linux
+  }
+}
+
+// Events App Service Plan (Flex Consumption - one app per plan)
+resource eventsPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
+  name: eventsPlanName
   location: location
   kind: 'functionapp'
   sku: {
@@ -106,7 +122,7 @@ module membershipFunctionApp 'modules/function-app.bicep' = {
   params: {
     functionAppName: membershipFunctionAppName
     location: location
-    appServicePlanId: appServicePlan.id
+    appServicePlanId: membershipPlan.id
     storageAccountName: functionStorageAccount.name
     appInsightsConnectionString: appInsights.properties.ConnectionString
     keyVaultName: keyVault.name
@@ -173,7 +189,7 @@ module eventsFunctionApp 'modules/function-app.bicep' = {
   params: {
     functionAppName: eventsFunctionAppName
     location: location
-    appServicePlanId: appServicePlan.id
+    appServicePlanId: eventsPlan.id
     storageAccountName: functionStorageAccount.name
     appInsightsConnectionString: appInsights.properties.ConnectionString
     keyVaultName: keyVault.name
